@@ -16,6 +16,11 @@ SRC_DIR=./src
 
 all:
 
+testeObj:
+	$(CC) -c teste/testeLeitura.c -Wall
+testeExe:
+	$(CC) testeLeitura.o lib/apidisk.o -o testes
+
 clean:
 	rm -rf $(LIB_DIR)/*.a $(BIN_DIR)/*.o $(SRC_DIR)/*~ $(INC_DIR)/*~ *~
 
