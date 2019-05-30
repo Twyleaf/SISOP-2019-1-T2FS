@@ -16,6 +16,19 @@ Função:	Formata logicamente o disco virtual t2fs_disk.dat para o sistema de
 		corresponde a um múltiplo de setores dados por sectors_per_block.
 -----------------------------------------------------------------------------*/
 int format2 (int sectors_per_block) {
+	if(!t2fsInitiated){
+		initT2FS();//Ler startPartition1, sizePartition1, inicializar dataSectionStart=startPartition1+TamBitmap
+	}
+	//startPartition1, sizePartition1
+	unsigned char sectorWithBlockPointerTemplate[SECTOR_SIZE];
+	for(int sectorByte=0; sectorByte < SECTOR_SIZE; sectorByte++){
+		sectorWithBlockPointerTemplate[sectorByte]=(unsigned char)0;//Zerar o setor no qual ficará o ponteiro para o proximo bloco
+	}//Talvez valor nulo deva ser 11111111, não 00000000
+	int sectorToWrite;
+	for(int currentBlock=0; currentBlock < sizePartition1/sectors_per_block; currentBlock++){
+		sectorToWrite= (currentBlock*sectors_per_block)+ startPartition1// 	MAIS O NRO DE SETORES USADOS POR BITMAP
+		write_sector(sectorToWrite,sectorWithBlockPointerTemplate)
+	}
 	return -1;
 }
 
