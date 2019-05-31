@@ -2,9 +2,10 @@
 /**
 */
 #include <limits.h>
+#include <math.h>
 #include "../include/t2fs.h"
 #include "../include/apidisk.h"
-#include "../include/apidisk.h"
+#include "../include/support.h"
 
 /*-----------------------------------------------------------------------------
 Função:	Informa a identificação dos desenvolvedores do T2FS.

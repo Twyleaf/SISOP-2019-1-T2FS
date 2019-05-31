@@ -5,7 +5,6 @@
 
 int main(){
 	unsigned char sectorBuffer[SECTOR_SIZE];
-	int j;
 	if(read_sector(0, sectorBuffer) == 0)
 		printf("foi\n");
 	/*
@@ -25,7 +24,7 @@ int main(){
 	printf("bloco inicial da particao 1: %x Decimal:%d\n", *BlocoInicioPart1,*BlocoInicioPart1);
 	int* BlocoFimPart1 = (int*)(sectorBuffer+12);
 	printf("bloco final da particao 1: %x Decimal:%d\n", *BlocoFimPart1,*BlocoFimPart1);
-
+	return 0;
 	
 	
 	
