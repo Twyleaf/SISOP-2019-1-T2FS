@@ -1,7 +1,10 @@
 
 /**
 */
-#include "t2fs.h"
+#include <limits.h>
+#include "../include/t2fs.h"
+#include "../include/apidisk.h"
+#include "../include/apidisk.h"
 
 /*-----------------------------------------------------------------------------
 Função:	Informa a identificação dos desenvolvedores do T2FS.
@@ -16,20 +19,26 @@ Função:	Formata logicamente o disco virtual t2fs_disk.dat para o sistema de
 		corresponde a um múltiplo de setores dados por sectors_per_block.
 -----------------------------------------------------------------------------*/
 int format2 (int sectors_per_block) {
-	if(!t2fsInitiated){
+	if(T2FSInitiated==0){
 		initT2FS();//Ler startPartition1, sizePartition1, inicializar dataSectionStart=startPartition1+TamBitmap
 	}
 	//startPartition1, sizePartition1
+	dataSectionStart= formatFSData(sectors_per_block);
+	
 	unsigned char sectorWithBlockPointerTemplate[SECTOR_SIZE];
-	for(int sectorByte=0; sectorByte < SECTOR_SIZE; sectorByte++){
-		sectorWithBlockPointerTemplate[sectorByte]=(unsigned char)0;//Zerar o setor no qual ficará o ponteiro para o proximo bloco
-	}//Talvez valor nulo deva ser 11111111, não 00000000
-	int sectorToWrite;
-	for(int currentBlock=0; currentBlock < sizePartition1/sectors_per_block; currentBlock++){
-		sectorToWrite= (currentBlock*sectors_per_block)+ startPartition1// 	MAIS O NRO DE SETORES USADOS POR BITMAP
-		write_sector(sectorToWrite,sectorWithBlockPointerTemplate)
+	int sectorByte;
+	for(sectorByte=0; sectorByte < SECTOR_SIZE; sectorByte++){
+		sectorWithBlockPointerTemplate[sectorByte] = UCHAR_MAX;//Valor de ponteiro nulo, 11111111
 	}
-	return -1;
+	int sectorToWrite;
+	int currentBlock;
+	for(currentBlock=0; currentBlock < sizePartition1/sectors_per_block; currentBlock++){
+		sectorToWrite= (currentBlock*sectors_per_block)+ startPartition1;// 	MAIS O NRO DE SETORES USADOS POR BITMAP
+		if(write_sector(sectorToWrite,sectorWithBlockPointerTemplate)!=0){
+			return -1;
+		}
+	}
+	return 1;
 }
 
 /*-----------------------------------------------------------------------------

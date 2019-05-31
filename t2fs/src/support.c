@@ -2,26 +2,40 @@
 #include <string.h>
 #include <stdlib.h>
 #include "../include/support.h"
+#include "../include/apidisk.h"
 #include "../include/t2fs.h"
 
-int t2fsInitiated = 0
-short versaoDisco
-short tamSetor
-short BInicialTabPart
-short Nparticoes
-int BlocoInicioPart1
-int BlocoFimPart
+int T2FSInitiated = 0;
+short discVersion;
+short sectorSize;
+short partitionTableFirstByte;
+short partitionCount;
+int firstSectorPartition1;
+int lastSectorPartition1;
 
 int initT2FS(){
 	unsigned char sectorBuffer[SECTOR_SIZE];
-	if(read_sector(0, sectorBuffer) != 0)
+	if(read_sector(0, sectorBuffer) != 0){
 		return 0;
-	versaoDisco = *(short*)sectorBuffer;
-	tamSetor = *(short*)(sectorBuffer+2);
-	BInicialTabPart = *(short*)(sectorBuffer+4);
-	Nparticoes = *(short*)(sectorBuffer+6);
-	BlocoInicioPart1 = *(int*)(sectorBuffer+8);
-	BlocoFimPart1 = *(int*)(sectorBuffer+12);
-	t2fsInitiated=1;
+	}
+	discVersion= *(short*)sectorBuffer;
+	sectorSize = *(short*)(sectorBuffer+2);
+	partitionTableFirstByte = *(short*)(sectorBuffer+4);
+	partitionCount = *(short*)(sectorBuffer+6);
+	firstSectorPartition1 = *(int*)(sectorBuffer+8);
+	lastSectorPartition1 = *(int*)(sectorBuffer+12);
+	T2FSInitiated=1;
 	return 1;
+}
+
+int formatFSData(int sectorsPerBlock){
+	unsigned char sectorBuffer[SECTOR_SIZE];
+	memcpy(sectorBuffer, (char*)&sectorsPerBlock, 2);
+	if(write_sector(firstSectorPartition1,sectorBuffer)!=0){
+		return -1;
+	}
+	blocksInPartition=blockSize/SECTOR_SIZE;
+	bytesForBitmap = ceil(blocksInPartition/8);
+	
+	
 }
