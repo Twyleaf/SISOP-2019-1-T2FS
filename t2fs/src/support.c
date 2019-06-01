@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include "../include/support.h"
 #include "../include/apidisk.h"
@@ -35,14 +36,15 @@ int formatFSData(int sectorsPerBlock){
 	if(write_sector(firstSectorPartition1,sectorBuffer)!=0){//Escrever o numero de setores por bloco do sistema de arquivos
 		return -1;
 	}
-	int sectorsInPartition=lastSectorPartition1-firstSectorPartition1;
+	int sectorsInPartition=lastSectorPartition1-firstSectorPartition1+1;
 	int blocksInPartition=sectorsInPartition/sectorsPerBlock;
 	int bytesForBitmap = ceil(blocksInPartition/8.0);
-	int sectorsForBitmap = ceil(bytesForBitmap/(float)SECTOR_SIZE);
 	int sectorByte;
 	for(sectorByte=0;sectorByte<SECTOR_SIZE;sectorByte++){
 		sectorBuffer[sectorByte]=UCHAR_MAX;
 	}
+	int sectorsForBitmap = ceil(bytesForBitmap/(float)SECTOR_SIZE);
+	int currentSector;
 	for(currentSector=0;currentSector<sectorsForBitmap;currentSector++)
 	{
 		if(write_sector(firstSectorPartition1+1+currentSector,sectorBuffer)!=0){//Escrever os bits do bitmap.
