@@ -33,8 +33,10 @@ int initT2FS(){
 int formatFSData(int sectorsPerBlock){
 	unsigned char sectorBuffer[SECTOR_SIZE];
 	memcpy(sectorBuffer, (char*)&sectorsPerBlock, 2);
+	//printf("Foi");
 	if(write_sector(firstSectorPartition1,sectorBuffer)!=0){//Escrever o numero de setores por bloco do sistema de arquivos
 		return -1;
+		//printf("Erro ao escrever os setores por bloco");
 	}
 	int sectorsInPartition=lastSectorPartition1-firstSectorPartition1+1;
 	int blocksInPartition=sectorsInPartition/sectorsPerBlock;
@@ -45,16 +47,31 @@ int formatFSData(int sectorsPerBlock){
 	}
 	int sectorsForBitmap = ceil(bytesForBitmap/(float)SECTOR_SIZE);
 	int currentSector;
+	//printf("Setores usados para o bitmap %d\n",sectorsForBitmap);
 	for(currentSector=0;currentSector<sectorsForBitmap;currentSector++)
 	{
 		if(write_sector(firstSectorPartition1+1+currentSector,sectorBuffer)!=0){//Escrever os bits do bitmap.
 			return -1;
+			//printf("Erro ao escrever o bitmap");
 		}
 	}
 	blockSectionStart = sectorsForBitmap + firstSectorPartition1 + 1;//Setor inicial para os blocos do sistema de arquivos.
-	//Blocos do bitmap+ bloco do aaaa
 	
-	return 1;
+	return 0;
+	
+	
+}
+
+void printPartition1DataSection(){
+	int sector, byte;
+	unsigned char sectorBuffer[SECTOR_SIZE];
+	for(sector = firstSectorPartition1;sector<blockSectionStart;sector++){
+		read_sector(sector,sectorBuffer);
+		for(byte=0; byte<SECTOR_SIZE;byte++){
+			printf("%x ",sectorBuffer[byte]);
+		}
+		printf("\n");
+	}
 	
 	
 }

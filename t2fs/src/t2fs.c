@@ -26,6 +26,7 @@ int format2 (int sectors_per_block) {
 	//startPartition1, sizePartition1
 	if(formatFSData(sectors_per_block)!=0){
 		return -1;
+		//printf("Erro ao formatar o sistema de arquivos");
 	}
 	
 	unsigned char sectorWithBlockPointerTemplate[SECTOR_SIZE];
