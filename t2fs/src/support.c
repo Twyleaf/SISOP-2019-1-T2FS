@@ -75,3 +75,36 @@ void printPartition1DataSection(){
 	
 	
 }
+
+int getFileBlock(char *filename){
+	char fileCurrentChar = filename[0];
+	char dirName[32];
+	if(fileCurrentChar!='/'){
+		return -1;
+	}
+	int dirNameStart=1;
+	int filenameIndex=0;
+	int wordIndex;
+	int dirNameIndex=0;
+	int fileBlockIndex=-1;
+	while(fileCurrentChar!= '\0'){
+		filenameIndex++;
+		fileCurrentChar=filename[filenameIndex];
+		if(fileCurrentChar=='/'){
+			for(wordIndex=dirNameStart;wordIndex < filenameIndex;wordIndex++){
+				dirName[dirNameIndex] = filename[wordIndex];
+				dirNameIndex++;
+			}
+			dirName[dirNameIndex]='\0';
+			fileBlockIndex = goToFileFromParentDir(dirName,fileBlockIndex);
+			if(fileBlockIndex<0){
+				return -1
+			}
+		}
+	}
+	return fileBlockIndex;
+}
+
+int goToFileFromParentDir(){
+	return -1
+}
