@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <limits.h>
-#include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <math.h>
 #include "../include/support.h"
@@ -14,6 +14,7 @@ short partitionCount;
 int firstSectorPartition1;
 int lastSectorPartition1;
 int blockSectionStart;
+int rootDirBlockNumber;
 
 int initT2FS(){
 	unsigned char sectorBuffer[SECTOR_SIZE];
@@ -26,6 +27,7 @@ int initT2FS(){
 	partitionCount = *(short*)(sectorBuffer+6);
 	firstSectorPartition1 = *(int*)(sectorBuffer+8);
 	lastSectorPartition1 = *(int*)(sectorBuffer+12);
+	rootDirBlockNumber =0;
 	T2FSInitiated=1;
 	return 1;
 }
@@ -86,7 +88,7 @@ int getFileBlock(char *filename){
 	int filenameIndex=0;
 	int wordIndex;
 	int dirNameIndex=0;
-	int fileBlockIndex=-1;
+	int fileBlockIndex=rootDirBlockNumber;
 	while(fileCurrentChar!= '\0'){
 		filenameIndex++;
 		fileCurrentChar=filename[filenameIndex];
@@ -98,13 +100,76 @@ int getFileBlock(char *filename){
 			dirName[dirNameIndex]='\0';
 			fileBlockIndex = goToFileFromParentDir(dirName,fileBlockIndex);
 			if(fileBlockIndex<0){
-				return -1
+				return -1;
 			}
 		}
 	}
 	return fileBlockIndex;
 }
 
-int goToFileFromParentDir(){
-	return -1
+int goToFileFromParentDir(char* dirName,int parentDirBlockNumber){
+	int sectorsInPartition=lastSectorPartition1-firstSectorPartition1+1;
+	int blocksInPartition=sectorsInPartition/sectorsPerBlock;
+	if(parentDirBlockNumber<blocksInPartition){
+		return -1;
+	}
+	int filesInDir=getFileCountFromDir(parentDirBlockNumber);
+	int dirOffset = blockPointerSize+ dirDataSize;
+	int dirEntryIndex = 0;
+	unsigned char blockBuffer[SECTOR_SIZE*sectorsPerBlock];
+	int blockToRead = parentDirBlockNumber;
+	int hasNextBlock=0;
+	dirRecord record;
+	unsigned int nextBlockPointer;
+	//for(dirEntryIndex=0;dirEntryIndex<filesInDir;dirEntryIndex++)
+	do{
+		if(readBlock(blockToRead,blockBuffer)!=0){
+			return -1;
+		}	
+		nextBlockPointer = *(unsigned int*)(blockBuffer);
+		if(nextBlockPointer!=UINT_MAX){
+			hasNextBlock=1;
+		}
+		while((dirEntryIndex<filesInDir)&&(dirOffset<=sectorsPerBlock*SECTOR_SIZE-dirEntrySize)){
+			record = *(t2fs_record*)(blockBuffer+dirOffset);
+			if(strcmp(dirName,record.name)==0){
+				return record.
+			}
+			dirEntryIndex++;
+			if(dirEntryIndex>=filesInDir){
+				return -2;
+			}
+			dirOffset+=dirEntrySize;
+		}
+		dirOffset = blockPointerSize+ dirDataSize;
+		
+	}while(hasNextBlock==1)
+	
+}
+
+
+int getDataFromBuffer(char *outputBuffer, int bufferDataStart, int dataSize, char* dataBuffer, int dataBufferSize) {
+	if (dataSize > diskSize) {
+		return -1;
+	}
+	int i = 0;
+	for (i=0; i < dataSize; i++) {
+		buffer[i] = diskBuffer[bufferDataStart + i];
+	}
+	return 0;
+}
+
+int readBlock(int blockNumber, char* data){
+	int sectorPos = blockNumber * SECTORS_PER_BLOCK;
+	int i, j;
+	char sectorBuffer[SECTOR_SIZE];
+	for(i = 0; i < sectorsPerBlock; i++){
+		if(read_sector(sectorPos + i, sectorBuffer) != 0){
+			return -1;
+		}
+		for(j = 0; j < SECTOR_SIZE; j++){
+			data[j + i * SECTOR_SIZE] = sectorBuffer[j];
+		}
+	}
+	return 0;
 }
