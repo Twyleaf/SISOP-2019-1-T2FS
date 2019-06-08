@@ -14,6 +14,7 @@ short partitionCount;
 int firstSectorPartition1;
 int lastSectorPartition1;
 int blockSectionStart;
+int blockSize;
 int rootDirBlockNumber;
 int dirEntrySize;
 int blockPointerSize;
@@ -120,7 +121,6 @@ int goToFileFromParentDir(char* dirName,int parentDirBlockNumber){
 	if(parentDirBlockNumber<blocksInPartition){
 		return -1;
 	}*/
-	int filesInDir=getFileCountFromDir(parentDirBlockNumber);
 	int dirOffset = blockPointerSize+ dirEntrySize;
 	int dirEntryIndex = 0;
 	unsigned char blockBuffer[blockSize];
@@ -128,14 +128,15 @@ int goToFileFromParentDir(char* dirName,int parentDirBlockNumber){
 	int hasNextBlock=0;
 	DirRecord record;
 	unsigned int nextBlockPointer;
-	//for(dirEntryIndex=0;dirEntryIndex<filesInDir;dirEntryIndex++)
+	if(readBlock(blockToRead,blockBuffer)!=0){
+		return -1;
+	}	
+	int filesInDir=*(int*)(blockBuffer+4);
 	do{
-		if(readBlock(blockToRead,blockBuffer)!=0){
-			return -1;
-		}	
 		nextBlockPointer = *(unsigned int*)(blockBuffer);
 		if(nextBlockPointer!=UINT_MAX){
 			hasNextBlock=1;
+			blockToRead = nextBlockPointer;
 		}
 		while((dirEntryIndex<filesInDir)&&(dirOffset<=blockSize-dirEntrySize)){
 			record = *(DirRecord*)(blockBuffer+dirOffset);
@@ -149,8 +150,13 @@ int goToFileFromParentDir(char* dirName,int parentDirBlockNumber){
 			dirOffset+=dirEntrySize;
 		}
 		dirOffset = blockPointerSize+ dirEntrySize;
-		
+		if(hasNextBlock==1){
+			if(readBlock(blockToRead,blockBuffer)!=0){
+				return -1;
+			}	
+		}
 	}while(hasNextBlock==1);
+	return -1;
 	
 }
 
