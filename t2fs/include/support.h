@@ -5,9 +5,9 @@
 
 typedef struct Dir_Record{
     char    name[32]; 					/* Nome do arquivo*/
-    BYTE    fileType;                   /* Tipo do arquivo: regular (0x01) ou diretório (0x02) */
+    unsigned char    fileType;			/* Tipo do arquivo: regular (0x01) ou diretório (0x02) */
     //DWORD   fileSize;                   /* Numero de bytes do arquivo   */
-	DWORD	dataPointer					/* Ponteiro para primeiro bloco de dados do arquivo */
+	unsigned int	dataPointer	;		/* Ponteiro para primeiro bloco de dados do arquivo */
 } DirRecord;
 
 
@@ -19,7 +19,10 @@ extern short partitionCount;
 extern int firstSectorPartition1;
 extern int lastSectorPartition1;
 extern int blockSectionStart;
-extern int blocksInPartition;
+extern int blockSize;
+extern int dirEntrySize;
+extern int blockPointerSize;
+//extern int blocksInPartition;
 
 int initT2FS();
 
@@ -31,5 +34,6 @@ int getFileBlock(char *filename);
 
 int goToFileFromParentDir();
 
+int readBlock(int blockNumber,unsigned char* data);
 
 #endif

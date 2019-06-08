@@ -15,6 +15,8 @@ int firstSectorPartition1;
 int lastSectorPartition1;
 int blockSectionStart;
 int rootDirBlockNumber;
+int dirEntrySize;
+int blockPointerSize;
 
 int initT2FS(){
 	unsigned char sectorBuffer[SECTOR_SIZE];
@@ -28,7 +30,11 @@ int initT2FS(){
 	firstSectorPartition1 = *(int*)(sectorBuffer+8);
 	lastSectorPartition1 = *(int*)(sectorBuffer+12);
 	rootDirBlockNumber =0;
+	dirEntrySize = sizeof(DirRecord);
+	blockPointerSize = sizeof(unsigned int);
 	T2FSInitiated=1;
+	//blockSectionStart = sectorsForBitmap + firstSectorPartition1 + 1;
+	//blockSize=SECTOR_SIZE*sectorsPerBlock;
 	return 1;
 }
 
@@ -58,7 +64,7 @@ int formatFSData(int sectorsPerBlock){
 		}
 	}
 	blockSectionStart = sectorsForBitmap + firstSectorPartition1 + 1;//Setor inicial para os blocos do sistema de arquivos.
-	
+	blockSize=SECTOR_SIZE*sectorsPerBlock;//TO DO: Botar em estrutura do FS
 	return 0;
 	
 	
@@ -108,18 +114,19 @@ int getFileBlock(char *filename){
 }
 
 int goToFileFromParentDir(char* dirName,int parentDirBlockNumber){
+	/*
 	int sectorsInPartition=lastSectorPartition1-firstSectorPartition1+1;
 	int blocksInPartition=sectorsInPartition/sectorsPerBlock;
 	if(parentDirBlockNumber<blocksInPartition){
 		return -1;
-	}
+	}*/
 	int filesInDir=getFileCountFromDir(parentDirBlockNumber);
-	int dirOffset = blockPointerSize+ dirDataSize;
+	int dirOffset = blockPointerSize+ dirEntrySize;
 	int dirEntryIndex = 0;
-	unsigned char blockBuffer[SECTOR_SIZE*sectorsPerBlock];
+	unsigned char blockBuffer[blockSize];
 	int blockToRead = parentDirBlockNumber;
 	int hasNextBlock=0;
-	dirRecord record;
+	DirRecord record;
 	unsigned int nextBlockPointer;
 	//for(dirEntryIndex=0;dirEntryIndex<filesInDir;dirEntryIndex++)
 	do{
@@ -130,10 +137,10 @@ int goToFileFromParentDir(char* dirName,int parentDirBlockNumber){
 		if(nextBlockPointer!=UINT_MAX){
 			hasNextBlock=1;
 		}
-		while((dirEntryIndex<filesInDir)&&(dirOffset<=sectorsPerBlock*SECTOR_SIZE-dirEntrySize)){
-			record = *(t2fs_record*)(blockBuffer+dirOffset);
+		while((dirEntryIndex<filesInDir)&&(dirOffset<=blockSize-dirEntrySize)){
+			record = *(DirRecord*)(blockBuffer+dirOffset);
 			if(strcmp(dirName,record.name)==0){
-				return record.
+				return record.dataPointer;
 			}
 			dirEntryIndex++;
 			if(dirEntryIndex>=filesInDir){
@@ -141,28 +148,29 @@ int goToFileFromParentDir(char* dirName,int parentDirBlockNumber){
 			}
 			dirOffset+=dirEntrySize;
 		}
-		dirOffset = blockPointerSize+ dirDataSize;
+		dirOffset = blockPointerSize+ dirEntrySize;
 		
-	}while(hasNextBlock==1)
+	}while(hasNextBlock==1);
 	
 }
 
 
 int getDataFromBuffer(char *outputBuffer, int bufferDataStart, int dataSize, char* dataBuffer, int dataBufferSize) {
-	if (dataSize > diskSize) {
+	if (dataSize > dataBufferSize) {
 		return -1;
 	}
 	int i = 0;
 	for (i=0; i < dataSize; i++) {
-		buffer[i] = diskBuffer[bufferDataStart + i];
+		outputBuffer[i] = dataBuffer[bufferDataStart + i];
 	}
 	return 0;
 }
 
-int readBlock(int blockNumber, char* data){
-	int sectorPos = blockNumber * SECTORS_PER_BLOCK;
+int readBlock(int blockNumber, unsigned char* data){
+	int sectorsPerBlock = blockSize/SECTOR_SIZE;
+	int sectorPos = blockNumber * sectorsPerBlock;
 	int i, j;
-	char sectorBuffer[SECTOR_SIZE];
+	unsigned char sectorBuffer[SECTOR_SIZE];
 	for(i = 0; i < sectorsPerBlock; i++){
 		if(read_sector(sectorPos + i, sectorBuffer) != 0){
 			return -1;
