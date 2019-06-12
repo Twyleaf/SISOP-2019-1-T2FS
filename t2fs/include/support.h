@@ -10,6 +10,12 @@ typedef struct Dir_Record{
 	unsigned int	dataPointer	;		/* Ponteiro para primeiro bloco de dados do arquivo */
 } DirRecord;
 
+typedef struct Dir_Data{
+    char    name[32]; 					/* Nome do arquivo*/
+    unsigned char    fileType;			/* Tipo do arquivo: regular (0x01) ou diretório (0x02) */
+	unsigned int	entryCount;			/* Número de entradas no diretorio*/
+} DirData;
+
 
 extern int T2FSInitiated;
 extern short diskVersion;

@@ -121,7 +121,7 @@ int goToFileFromParentDir(char* dirName,int parentDirBlockNumber){
 	if(parentDirBlockNumber<blocksInPartition){
 		return -1;
 	}*/
-	int dirOffset = blockPointerSize+ dirEntrySize;
+	int dirOffset = blockPointerSize+ sizeof(DirData);
 	int dirEntryIndex = 0;
 	unsigned char blockBuffer[blockSize];
 	int blockToRead = parentDirBlockNumber;
@@ -131,7 +131,8 @@ int goToFileFromParentDir(char* dirName,int parentDirBlockNumber){
 	if(readBlock(blockToRead,blockBuffer)!=0){
 		return -1;
 	}	
-	int filesInDir=*(int*)(blockBuffer+4);
+	DirData* dirData=(DirData*)(blockBuffer+4);
+	int filesInDir=dirData->entryCount;
 	do{
 		nextBlockPointer = *(unsigned int*)(blockBuffer);
 		if(nextBlockPointer!=UINT_MAX){
