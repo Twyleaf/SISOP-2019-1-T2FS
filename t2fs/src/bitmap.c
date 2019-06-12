@@ -24,15 +24,16 @@ int setAndReturnBit(unsigned char *bitmap, int bufferStart, int bufferSizeBytes)
 	int currentBit;
 	int bitPositionInBuffer, bitPositionInBitmap;
 	for(currentByte = bufferStart; currentByte < bufferSizeBytes; currentByte++){
-		if(bitmap[currentByte]!=UCHAR_MIN){
+		if(bitmap[currentByte]!=(unsigned char)0){//1 = livre, 0 = ocupado
 			for(currentBit = 0; currentBit < BITS_PER_WORD; currentBit++){
 				bitPositionInBuffer = ((bufferStart+currentByte)*CHAR_BIT)+currentBit;
 				bitPositionInBitmap = (currentByte*CHAR_BIT)+currentBit;
-				if(getBit(bitmap, bitPositionInBuffer)==0){
+				if(getBit(bitmap, bitPositionInBuffer)==1){
 					clearBit(bitmap, bitPositionInBuffer);
 					return bitPositionInBitmap;
 				}
 			}
 		}
 	}
+	return -1;
 }

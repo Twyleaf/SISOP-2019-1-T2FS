@@ -5,6 +5,7 @@
 #include <math.h>
 #include "../include/support.h"
 #include "../include/apidisk.h"
+#include "../include/bitmap.h"
 
 int T2FSInitiated = 0;
 short diskVersion;
