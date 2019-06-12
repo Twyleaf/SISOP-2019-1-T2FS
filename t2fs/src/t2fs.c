@@ -17,7 +17,7 @@ int identify2 (char *name, int size) {
 		strncpy(name, components, strlen(components)+1);
 		return 0;
 	}
-	printf("Size not sufficient\n");
+	printf("Size is not sufficient\n");
 	return -1;
 }
 
