@@ -2,6 +2,7 @@
 /**
 */
 #include <limits.h>
+#include <string.h>
 #include <math.h>
 #include "../include/t2fs.h"
 #include "../include/apidisk.h"
@@ -11,9 +12,12 @@
 Função:	Informa a identificação dos desenvolvedores do T2FS.
 -----------------------------------------------------------------------------*/
 int identify2 (char *name, int size) {
-    	char components[] = "Amaury Teixeira Cassola 287704\nBruno Ramos Toresan 291332\nDavid Mees Knijnik 264489";
-	strncpy(name, components, size);
-	return 0;
+    	char components* = "Amaury Teixeira Cassola 287704\nBruno Ramos Toresan 291332\nDavid Mees Knijnik 264489";
+	if(size >= strlen(components)){
+		strncpy(name, components, strlen(components)+1);
+		return 0;
+	}
+	return -1;
 }
 
 /*-----------------------------------------------------------------------------
