@@ -23,7 +23,7 @@ int blockPointerSize;
 int initT2FS(){
 	unsigned char sectorBuffer[SECTOR_SIZE];
 	if(read_sector(0, sectorBuffer) != 0){
-		return 0;
+		return -1;
 	}
 	diskVersion= *(short*)sectorBuffer;
 	sectorSize = *(short*)(sectorBuffer+2);
@@ -34,20 +34,29 @@ int initT2FS(){
 	rootDirBlockNumber =0;
 	dirEntrySize = sizeof(DirRecord);
 	blockPointerSize = sizeof(unsigned int);
+	if(readFSInfo() != SUCCEEDED){
+		return -1;
+	}
 	T2FSInitiated=1;
 	//blockSectionStart = sectorsForBitmap + firstSectorPartition1 + 1;
 	//blockSize=SECTOR_SIZE*sectorsPerBlock;
 	return 1;
 }
 
+int readFSInfo(){
+	unsigned char sectorBuffer[SECTOR_SIZE];
+	if(read_sector(firstSectorPartition1,sectorBuffer) !=0){
+		return -1;
+	}
+	T2FSInfo* info = (T2FSInfo*)(sectorBuffer);
+	blockSectionStart = info->blockSectionStart;
+	blockSize = info->blockSize;
+	return SUCCEEDED;
+
+}
+
 int formatFSData(int sectorsPerBlock){
 	unsigned char sectorBuffer[SECTOR_SIZE];
-	memcpy(sectorBuffer, (char*)&sectorsPerBlock, 2);
-	//printf("Foi");
-	if(write_sector(firstSectorPartition1,sectorBuffer)!=0){//Escrever o numero de setores por bloco do sistema de arquivos
-		return -1;
-		//printf("Erro ao escrever os setores por bloco");
-	}
 	int sectorsInPartition=lastSectorPartition1-firstSectorPartition1+1;
 	int blocksInPartition=sectorsInPartition/sectorsPerBlock;
 	int bytesForBitmap = ceil(blocksInPartition/8.0);
@@ -67,6 +76,16 @@ int formatFSData(int sectorsPerBlock){
 	}
 	blockSectionStart = sectorsForBitmap + firstSectorPartition1 + 1;//Setor inicial para os blocos do sistema de arquivos.
 	blockSize=SECTOR_SIZE*sectorsPerBlock;//TO DO: Botar em estrutura do FS
+	
+	//Adicionar dados do sistema de arquivos (no primeiro setor, antes do bitmap)
+	T2FSInfo FSInfo;
+	FSInfo.blockSectionStart = (unsigned int)blockSectionStart;
+	FSInfo.blockSize = (unsigned int)blockSize;
+	memcpy(sectorBuffer, (T2FSInfo*)&FSInfo, sizeof(T2FSInfo));//Escreve dados de T2FS no disco
+	if(write_sector(firstSectorPartition1,sectorBuffer)!=0){//FSInfo precisa ser menor que a partição
+		return -1;
+		//printf("Erro ao escrever os setores por bloco");
+	}
 	return 0;
 	
 	

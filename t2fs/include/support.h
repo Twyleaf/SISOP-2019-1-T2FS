@@ -3,6 +3,8 @@
 #ifndef __SUPPORTT2FS___
 #define __SUPPORTT2FS___
 
+#define SUCCEEDED 0
+
 typedef struct Dir_Record{
     char    name[32]; 					/* Nome do arquivo*/
     unsigned char    fileType;			/* Tipo do arquivo: regular (0x01) ou diretório (0x02) */
@@ -15,6 +17,12 @@ typedef struct Dir_Data{
     unsigned char    fileType;			/* Tipo do arquivo: regular (0x01) ou diretório (0x02) */
 	unsigned int	entryCount;			/* Número de entradas no diretorio*/
 } DirData;
+
+typedef struct T2FS_Info{
+	unsigned int blockSectionStart;
+	unsigned int blockSize;
+
+} T2FSInfo;
 
 
 extern int T2FSInitiated;
@@ -33,6 +41,8 @@ extern int blockPointerSize;
 int initT2FS();
 
 int formatFSData(int sectorsPerBlock);
+
+int readFSInfo();
 
 void printPartition1DataSection();
 
