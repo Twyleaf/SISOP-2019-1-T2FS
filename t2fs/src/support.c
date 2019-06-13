@@ -148,30 +148,30 @@ int goToFileFromParentDir(char* dirName,int parentDirBlockNumber){
 	int hasNextBlock=0;
 	DirRecord record;
 	unsigned int nextBlockPointer;
-	if(readBlock(blockToRead,blockBuffer)!=0){
+	if(readBlock(blockToRead,blockBuffer)!=0){//Faz a leitura do primeiro bloco
 		return -1;
 	}	
-	DirData* dirData=(DirData*)(blockBuffer+4);
+	DirData* dirData=(DirData*)(blockBuffer+4);// Salva dados do diretório
 	int filesInDir=dirData->entryCount;
-	do{
-		nextBlockPointer = *(unsigned int*)(blockBuffer);
-		if(nextBlockPointer!=UINT_MAX){
+	do{//	Itera sobre todos os blocos do diretório
+		nextBlockPointer = *(unsigned int*)(blockBuffer);//Calcula ponteiro para próximo bloco
+		if(nextBlockPointer!=UINT_MAX){//Coloca próximo bloco para ser lido, se existir
 			hasNextBlock=1;
 			blockToRead = nextBlockPointer;
 		}
-		while((dirEntryIndex<filesInDir)&&(dirOffset<=blockSize-dirEntrySize)){
-			record = *(DirRecord*)(blockBuffer+dirOffset);
-			if(strcmp(dirName,record.name)==0){
+		while((dirEntryIndex<filesInDir)&&(dirOffset<=blockSize-dirEntrySize)){//Enquanto não ler todas as entradas e não exceder tamanho do bloco
+			record = *(DirRecord*)(blockBuffer+dirOffset);//Lê entrada
+			if(strcmp(dirName,record.name)==0){//Se nome é o sendo procurado, retorna número do bloco do arquivo.
 				return record.dataPointer;
 			}
-			dirEntryIndex++;
-			if(dirEntryIndex>=filesInDir){
+			dirEntryIndex++;//			Incrementa índice de número de entradas (lidas)
+			if(dirEntryIndex>=filesInDir){//Encerra se não houver mais arquivos para ler
 				return -2;
 			}
-			dirOffset+=dirEntrySize;
+			dirOffset+=dirEntrySize;//Adiciona ao offset(espaço entre começo do buffer até entrada a ser lida) o tamanho da entrada já lida.
 		}
-		dirOffset = blockPointerSize+ dirEntrySize;
-		if(hasNextBlock==1){
+		dirOffset = blockPointerSize+ dirEntrySize;//Reseta offset para o começo das entradas no bloco
+		if(hasNextBlock==1){//		Lê próximo bloco, se houver
 			if(readBlock(blockToRead,blockBuffer)!=0){
 				return -1;
 			}	
@@ -207,4 +207,48 @@ int readBlock(int blockNumber, unsigned char* data){
 		}
 	}
 	return 0;
+}
+
+int getFileNameAndPath(char *pathname, char *path, char *name){
+	char path[MAX_FILE_NAME_SIZE+1];
+	char name[32];
+	int pathIndex=0;
+	while(pathname[pathIndex]!='\0'){
+		path[pathIndex]=pathname[pathIndex];
+		if(pathname[pathIndex]=='/'){
+			lastNameStart = pathIndex+1;
+		}
+		pathIndex++;
+	}
+	if(lastNameStart==pathIndex)
+		return -1;
+	path[lastNameStart-1]='\0';
+	int lastNameIndex=lastNameStart;
+	int nameIndex=0;
+	while(pathname[lastNameIndex]!='\0'){
+		name[nameIndex]=pathname[lastNameIndex];
+		nameIndex++;
+		lastNameIndex++;
+	}
+	name[nameIndex]='\0';
+	return 0;
+}
+
+int writeDirData(int firstBlockNumber, DirData newDirData){
+	unsigned char sectorBuffer[SECTOR_SIZE];
+	int sectorToUse = firstSectorPartition1+firstBlockNumber*sectorsPerBlock;
+	if(read_sector(sectorToUse,sectorBuffer)!=0)
+		return -1;
+	int dirDataOffset = sizeof(int);//Ponteiro para próximo bloco no começo
+	memcpy(sectorBuffer+dirDataOffset, &newDirData, sizeof(DirData));//Escreve dados de T2FS no disco
+	if(write_sector(sectorToUse,sectorBuffer)!=0)
+		return -1;
+	return 0;
+}
+
+int insertEntry(int parentDirBlock,DirRecord newDirEntry){
+	unsigned char sectorBuffer[SECTOR_SIZE];
+	int sectorToUse = firstSectorPartition1+firstBlockNumber*sectorsPerBlock;
+	if(read_sector(sectorToUse,sectorBuffer)!=0)
+		return -1;
 }

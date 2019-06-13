@@ -3,6 +3,7 @@
 */
 #include <limits.h>
 #include <math.h>
+#include <string.h>
 #include "../include/t2fs.h"
 #include "../include/apidisk.h"
 #include "../include/support.h"
@@ -114,7 +115,28 @@ int seek2 (FILE2 handle, DWORD offset) {
 Função:	Função usada para criar um novo diretório.
 -----------------------------------------------------------------------------*/
 int mkdir2 (char *pathname) {
-	return -1;
+	char *path;
+	char *name;
+	if(getFileNameAndPath(pathname,path, name)==-1)
+		return -1;
+	int parentDirBlock = getFileBlock(path);
+	int firstBlockNumber = allocateBlock();
+	if(firstBlockNumber==-1)
+		return -1;
+	
+	DirData newDirData;
+	strcpy(newDirData.name,name);
+	newDirData.fileType = 0x01 // Tipo do arquivo: diretório (0x02) 
+	newDirData.entryCount = 0;
+	
+	DirEntry newDirEntry;
+	strcpy(newDirEntry.name,name);
+	newDirEntry.fileType = 0x01 // Tipo do arquivo: diretório (0x02) 
+	newDirEntry.firstBlockNumber = firstBlockNumber;
+	if(insertEntry(parentDirBlock,newDirEntry)==-1)
+		return -1;
+	
+	return writeDirData(firstBlockNumber,newDirData);
 }
 
 /*-----------------------------------------------------------------------------

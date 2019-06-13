@@ -16,6 +16,7 @@ typedef struct Dir_Data{
     char    name[32]; 					/* Nome do arquivo*/
     unsigned char    fileType;			/* Tipo do arquivo: regular (0x01) ou diretório (0x02) */
 	unsigned int	entryCount;			/* Número de entradas no diretorio*/
+	//unsigned int	fileSize;	Necessário implementar suporte para readdir. Colocar em entrada de dir?
 } DirData;
 
 typedef struct T2FS_Info{
@@ -57,5 +58,11 @@ int getFileBlock(char *filename);
 int goToFileFromParentDir();
 
 int readBlock(int blockNumber,unsigned char* data);
+
+int getFileNameAndPath(char *pathname, char *path, char *name);
+
+void allocateBlock();
+
+int writeDirData(int firstBlockNumber, DirData newDirData);
 
 #endif
