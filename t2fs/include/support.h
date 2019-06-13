@@ -24,6 +24,12 @@ typedef struct T2FS_Info{
 
 } T2FSInfo;
 
+typedef struct OpenFileData{
+	unsigned int first_block;
+	char file_name[59];
+	int pointer_to_current_byte;
+}
+
 
 extern int T2FSInitiated;
 extern short diskVersion;
