@@ -25,11 +25,11 @@ typedef struct T2FS_Info{
 
 } T2FSInfo;
 
-typedef struct OpenFileData{
+typedef struct Open_File_Data{
 	unsigned int first_block;
-	char file_name[59];
+	char file_name[32];
 	int pointer_to_current_byte;
-}
+} OpenFileData;
 
 
 extern int T2FSInitiated;

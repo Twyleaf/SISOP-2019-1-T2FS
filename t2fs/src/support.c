@@ -256,6 +256,7 @@ int insertEntry(int firstBlockNumber,DirRecord newDirEntry){
 	int sectorToUse = getFirstSectorOfBlock(firstBlockNumber);
 	if(read_sector(sectorToUse,sectorBuffer)!=0)
 		return -1;
+	return 0;
 }
 
 int getFirstSectorOfBlock(int blockNumber){

@@ -115,8 +115,8 @@ int seek2 (FILE2 handle, DWORD offset) {
 Função:	Função usada para criar um novo diretório.
 -----------------------------------------------------------------------------*/
 int mkdir2 (char *pathname) {
-	char *path;
-	char *name;
+	char path[MAX_FILE_NAME_SIZE+1];
+	char name[32];
 	if(getFileNameAndPath(pathname,path, name)==-1)
 		return -1;
 	int parentDirBlock = getFileBlock(path);
@@ -132,7 +132,7 @@ int mkdir2 (char *pathname) {
 	DirRecord newDirEntry;
 	strcpy(newDirEntry.name,name);
 	newDirEntry.fileType = 0x01; // Tipo do arquivo: diretório (0x02) 
-	newDirEntry.firstBlockNumber = firstBlockNumber;
+	newDirEntry.dataPointer = firstBlockNumber;
 	if(insertEntry(parentDirBlock,newDirEntry)==-1)
 		return -1;
 	
