@@ -1,7 +1,7 @@
 
 
-#ifndef __SUPPORTT2FS___
-#define __SUPPORTT2FS___
+#ifndef __BITMAPT2FS___
+#define __BITMAPT2FS___
 
 void setBit(unsigned char *bitmap, int n) ;
 

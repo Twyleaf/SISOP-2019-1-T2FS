@@ -126,12 +126,12 @@ int mkdir2 (char *pathname) {
 	
 	DirData newDirData;
 	strcpy(newDirData.name,name);
-	newDirData.fileType = 0x01 // Tipo do arquivo: diretório (0x02) 
+	newDirData.fileType = 0x01; // Tipo do arquivo: diretório (0x02) 
 	newDirData.entryCount = 0;
 	
-	DirEntry newDirEntry;
+	DirRecord newDirEntry;
 	strcpy(newDirEntry.name,name);
-	newDirEntry.fileType = 0x01 // Tipo do arquivo: diretório (0x02) 
+	newDirEntry.fileType = 0x01; // Tipo do arquivo: diretório (0x02) 
 	newDirEntry.firstBlockNumber = firstBlockNumber;
 	if(insertEntry(parentDirBlock,newDirEntry)==-1)
 		return -1;

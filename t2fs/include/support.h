@@ -61,8 +61,12 @@ int readBlock(int blockNumber,unsigned char* data);
 
 int getFileNameAndPath(char *pathname, char *path, char *name);
 
-void allocateBlock();
+int allocateBlock();
 
 int writeDirData(int firstBlockNumber, DirData newDirData);
+
+int insertEntry(int firstBlockNumber,DirRecord newDirEntry);
+
+int getFirstSectorOfBlock(int blockNumber);
 
 #endif

@@ -210,9 +210,10 @@ int readBlock(int blockNumber, unsigned char* data){
 }
 
 int getFileNameAndPath(char *pathname, char *path, char *name){
-	char path[MAX_FILE_NAME_SIZE+1];
-	char name[32];
+	//char path[MAX_FILE_NAME_SIZE+1];
+	//char name[32];
 	int pathIndex=0;
+	int lastNameStart;
 	while(pathname[pathIndex]!='\0'){
 		path[pathIndex]=pathname[pathIndex];
 		if(pathname[pathIndex]=='/'){
@@ -234,9 +235,13 @@ int getFileNameAndPath(char *pathname, char *path, char *name){
 	return 0;
 }
 
+int allocateBlock(){
+	return -1;//TODO
+}
+
 int writeDirData(int firstBlockNumber, DirData newDirData){
 	unsigned char sectorBuffer[SECTOR_SIZE];
-	int sectorToUse = firstSectorPartition1+firstBlockNumber*sectorsPerBlock;
+	int sectorToUse = getFirstSectorOfBlock(firstBlockNumber);
 	if(read_sector(sectorToUse,sectorBuffer)!=0)
 		return -1;
 	int dirDataOffset = sizeof(int);//Ponteiro para próximo bloco no começo
@@ -246,9 +251,14 @@ int writeDirData(int firstBlockNumber, DirData newDirData){
 	return 0;
 }
 
-int insertEntry(int parentDirBlock,DirRecord newDirEntry){
+int insertEntry(int firstBlockNumber,DirRecord newDirEntry){
 	unsigned char sectorBuffer[SECTOR_SIZE];
-	int sectorToUse = firstSectorPartition1+firstBlockNumber*sectorsPerBlock;
+	int sectorToUse = getFirstSectorOfBlock(firstBlockNumber);
 	if(read_sector(sectorToUse,sectorBuffer)!=0)
 		return -1;
+}
+
+int getFirstSectorOfBlock(int blockNumber){
+	int sectorsPerBlock = blockSize / SECTOR_SIZE;
+	return firstSectorPartition1+(blockNumber*sectorsPerBlock);
 }
