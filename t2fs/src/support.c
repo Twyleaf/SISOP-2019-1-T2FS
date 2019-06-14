@@ -151,7 +151,7 @@ int goToFileFromParentDir(char* dirName,int parentDirBlockNumber){
 	if(readBlock(blockToRead,blockBuffer)!=0){//Faz a leitura do primeiro bloco
 		return -1;
 	}	
-	DirData* dirData=(DirData*)(blockBuffer+4);// Salva dados do diretório
+	DirData* dirData=(DirData*)(blockBuffer+blockPointerSize);// Salva dados do diretório
 	int filesInDir=dirData->entryCount;
 	do{//	Itera sobre todos os blocos do diretório
 		nextBlockPointer = *(unsigned int*)(blockBuffer);//Calcula ponteiro para próximo bloco
@@ -251,11 +251,41 @@ int writeDirData(int firstBlockNumber, DirData newDirData){
 	return 0;
 }
 
-int insertEntry(int firstBlockNumber,DirRecord newDirEntry){
+int insertEntryInDir(int dirFirstBlockNumber,DirRecord newDirEntry){
 	unsigned char sectorBuffer[SECTOR_SIZE];
-	int sectorToUse = getFirstSectorOfBlock(firstBlockNumber);
+	int sectorToUse = getFirstSectorOfBlock(dirFirstBlockNumber);
 	if(read_sector(sectorToUse,sectorBuffer)!=0)
 		return -1;
+	int nextBlockPointer = *(unsigned int*)(sectorBuffer);
+	DirData targetDirData = *(DirData*)(sectorBuffer+blockPointerSize);
+	int filesInDir = targetDirData.entryCount;
+	float block1DataSize = sizeof(unsigned int)+sizeof(DirData);
+	float maxEntryCountBlock1= floor(block1DataSize/(float)sizeof(DirRecord));
+	float maxEntryCountRestBlocks = floor((float)sizeof(unsigned int)/(float)sizeof(DirRecord));
+	if(maxEntryCountBlock1 >filesInDir){//se houver espaço no bloco 1
+		//escrever no bloco 1
+		writeRecordInBlock(newDirEntry,dirFirstBlockNumber,block1DataSize+filesInDir*sizeof(DirRecord));//IMPLEMENTAR
+		return 0;
+	}
+	float blocksNeededAfterFirst = ((float)filesInDir-maxEntryCountBlock1)/maxEntryCountRestBlocks;
+	int lastBlock =getLastBlockInFile(dirFirstBlockNumber);
+	if(ceilf(blocksNeededAfterFirst) == blocksNeededAfterFirst){//Todos os blocos estão cheios, é preciso alocar um novo
+		int dirToInsertOffset = blockPointerSize;
+		int nextBlockAddress =allocateBlock();
+		writeRecordInBlock(newDirEntry, lastBlock, dirToInsertOffset);
+		writeNextBlockPointer(lastBlock,nextBlockAddress);//IMPLEMENTAR
+	}else{
+		int entriesInBlock = filesInDir;
+		entriesInBlock-=maxEntryCountBlock1;
+		while(entriesInBlock>maxEntryCountRestBlocks){
+			entriesInBlock-=maxEntryCountRestBlocks;
+		}
+		int dirToInsertOffset = blockPointerSize+entriesInBlock*sizeof(DirRecord);
+		writeRecordInBlock(newDirEntry, lastBlock, dirToInsertOffset);//IMPLEMENTAR
+		//escreve ali
+	}
+	
+	
 	return 0;
 }
 

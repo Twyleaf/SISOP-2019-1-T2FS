@@ -65,7 +65,7 @@ int allocateBlock();
 
 int writeDirData(int firstBlockNumber, DirData newDirData);
 
-int insertEntry(int firstBlockNumber,DirRecord newDirEntry);
+int insertEntryInDir(int dirFirstBlockNumber,DirRecord newDirEntry);
 
 int getFirstSectorOfBlock(int blockNumber);
 

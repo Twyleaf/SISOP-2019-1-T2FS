@@ -119,6 +119,7 @@ int mkdir2 (char *pathname) {
 	char name[32];
 	if(getFileNameAndPath(pathname,path, name)==-1)
 		return -1;
+	//TO DO: CRIAR TESTE SE HÁ ARQUIVO DE MESMO NOME NO DIRETÓRIO
 	int parentDirBlock = getFileBlock(path);
 	int firstBlockNumber = allocateBlock();
 	if(firstBlockNumber==-1)
@@ -133,7 +134,7 @@ int mkdir2 (char *pathname) {
 	strcpy(newDirEntry.name,name);
 	newDirEntry.fileType = 0x01; // Tipo do arquivo: diretório (0x02) 
 	newDirEntry.dataPointer = firstBlockNumber;
-	if(insertEntry(parentDirBlock,newDirEntry)==-1)
+	if(insertEntryInDir(parentDirBlock,newDirEntry)==-1)
 		return -1;
 	
 	return writeDirData(firstBlockNumber,newDirData);
