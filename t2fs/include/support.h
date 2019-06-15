@@ -41,6 +41,7 @@ extern int firstSectorPartition1;
 extern int lastSectorPartition1;
 extern int blockSectionStart;
 extern int blockSize;
+extern int rootDirBlockNumber;
 extern int dirEntrySize;
 extern int blockPointerSize;
 //extern int blocksInPartition;

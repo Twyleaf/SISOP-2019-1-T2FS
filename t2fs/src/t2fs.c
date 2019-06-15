@@ -45,6 +45,12 @@ int format2 (int sectors_per_block) {
 			return -1;
 		}
 	}
+	DirData rootDirData;
+	strcpy(rootDirData.name,"/\0");
+	rootDirData.fileType =0x02;
+	rootDirData.entryCount = 0;
+	if(writeDirData(rootDirBlockNumber, rootDirData)==-1)
+		return -1;
 	return 0;
 }
 
