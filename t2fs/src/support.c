@@ -241,8 +241,11 @@ int getFileNameAndPath(char *pathname, char *path, char *name){
 	}
 	if(lastNameStart==pathIndex)
 		return -1;
-	
-	path[lastNameStart-1]='\0';
+	if(lastNameStart==1){
+		path[lastNameStart]='\0';
+	}else{
+		path[lastNameStart-1]='\0';
+	}
 	int lastNameIndex=lastNameStart;
 	int nameIndex=0;
 	while(pathname[lastNameIndex]!='\0'){
