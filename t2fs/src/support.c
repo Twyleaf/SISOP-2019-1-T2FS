@@ -209,6 +209,23 @@ int readBlock(int blockNumber, unsigned char* data){
 	return 0;
 }
 
+int writeBlock(int blockNumber, unsigned char* data){
+	int sectorsPerBlock = blockSize/SECTOR_SIZE;
+	int sectorPos = blockNumber * sectorsPerBlock;
+	int i, j;
+	unsigned char sectorBuffer[SECTOR_SIZE];
+	for(i = 0; i < sectorsPerBlock; i++){
+		for(j = 0; j < SECTOR_SIZE; j++){
+			sectorBuffer[j]=data[j + i * SECTOR_SIZE];
+		}
+		if(write_sector(sectorPos + i, sectorBuffer) != 0){
+			return -1;
+		}
+		
+	}
+	return 0;
+}
+
 int getFileNameAndPath(char *pathname, char *path, char *name){
 	//char path[MAX_FILE_NAME_SIZE+1];
 	//char name[32];
@@ -256,7 +273,6 @@ int insertEntryInDir(int dirFirstBlockNumber,DirRecord newDirEntry){
 	int sectorToUse = getFirstSectorOfBlock(dirFirstBlockNumber);
 	if(read_sector(sectorToUse,sectorBuffer)!=0)
 		return -1;
-	int nextBlockPointer = *(unsigned int*)(sectorBuffer);
 	DirData targetDirData = *(DirData*)(sectorBuffer+blockPointerSize);
 	int filesInDir = targetDirData.entryCount;
 	float block1DataSize = sizeof(unsigned int)+sizeof(DirData);
@@ -264,7 +280,7 @@ int insertEntryInDir(int dirFirstBlockNumber,DirRecord newDirEntry){
 	float maxEntryCountRestBlocks = floor((float)sizeof(unsigned int)/(float)sizeof(DirRecord));
 	if(maxEntryCountBlock1 >filesInDir){//se houver espaço no bloco 1
 		//escrever no bloco 1
-		writeRecordInBlock(newDirEntry,dirFirstBlockNumber,block1DataSize+filesInDir*sizeof(DirRecord));//IMPLEMENTAR
+		writeRecordInBlock(newDirEntry,dirFirstBlockNumber,block1DataSize+filesInDir*sizeof(DirRecord));
 		return 0;
 	}
 	float blocksNeededAfterFirst = ((float)filesInDir-maxEntryCountBlock1)/maxEntryCountRestBlocks;
@@ -273,7 +289,7 @@ int insertEntryInDir(int dirFirstBlockNumber,DirRecord newDirEntry){
 		int dirToInsertOffset = blockPointerSize;
 		int nextBlockAddress =allocateBlock();
 		writeRecordInBlock(newDirEntry, lastBlock, dirToInsertOffset);
-		writeNextBlockPointer(lastBlock,nextBlockAddress);//IMPLEMENTAR
+		writeNextBlockPointer(lastBlock,nextBlockAddress);
 	}else{
 		int entriesInBlock = filesInDir;
 		entriesInBlock-=maxEntryCountBlock1;
@@ -281,8 +297,7 @@ int insertEntryInDir(int dirFirstBlockNumber,DirRecord newDirEntry){
 			entriesInBlock-=maxEntryCountRestBlocks;
 		}
 		int dirToInsertOffset = blockPointerSize+entriesInBlock*sizeof(DirRecord);
-		writeRecordInBlock(newDirEntry, lastBlock, dirToInsertOffset);//IMPLEMENTAR
-		//escreve ali
+		writeRecordInBlock(newDirEntry, lastBlock, dirToInsertOffset);
 	}
 	
 	
@@ -293,3 +308,40 @@ int getFirstSectorOfBlock(int blockNumber){
 	int sectorsPerBlock = blockSize / SECTOR_SIZE;
 	return firstSectorPartition1+(blockNumber*sectorsPerBlock);
 }
+
+void writeNextBlockPointer(int blockNumber,unsigned int pointer){
+	int sector = getFirstSectorOfBlock(blockNumber);
+	unsigned char sectorBuffer[SECTOR_SIZE];
+	read_sector(sector,sectorBuffer);
+	memcpy(sectorBuffer, (unsigned int*)&pointer, sizeof(unsigned int));//Escreve ponteiro
+	write_sector(sector,sectorBuffer);
+	
+}
+
+int writeRecordInBlock(DirRecord newDirEntry, int blockToWriteEntry, int dirToInsertOffset){
+	unsigned char blockBuffer[blockSize];
+	if(readBlock(blockToWriteEntry, blockBuffer)!=0)
+		return -1;
+	memcpy(blockBuffer, (DirRecord*)&newDirEntry, sizeof(newDirEntry));
+	if(writeBlock(blockToWriteEntry, blockBuffer)!=0)
+		return -1;
+	return SUCCEEDED;
+}
+
+int getLastBlockInFile(unsigned int fileFirstBlockNumber){
+	unsigned int currentFileBlock=fileFirstBlockNumber;
+	unsigned int nextBlock=fileFirstBlockNumber;
+	unsigned char sectorBuffer[SECTOR_SIZE];
+	int currentFileSector;
+	while(nextBlock!= UINT_MAX){
+		currentFileBlock = nextBlock;
+		currentFileSector= getFirstSectorOfBlock(currentFileBlock);
+		if(read_sector(currentFileSector,sectorBuffer)!=0)
+			return -1;
+		nextBlock = *(unsigned int*)(sectorBuffer);
+	}
+	return currentFileBlock;
+	
+	
+}
+

@@ -69,4 +69,11 @@ int insertEntryInDir(int dirFirstBlockNumber,DirRecord newDirEntry);
 
 int getFirstSectorOfBlock(int blockNumber);
 
+void writeNextBlockPointer(int blockNumber,unsigned int pointer);
+
+int writeRecordInBlock(DirRecord newDirEntry, int blockToWriteEntry, int dirToInsertOffset);
+
+int getLastBlockInFile(unsigned int fileFirstBlockNumber);
+
+
 #endif
