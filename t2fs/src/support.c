@@ -108,6 +108,7 @@ int getFileBlock(char *filename){
 	char fileCurrentChar = filename[0];
 	char dirName[32];
 	if(fileCurrentChar!='/'){
+		printf("[getFileBlock] Erro, path não absoluto\n");
 		return -1;
 	}
 	int dirNameStart=1;
@@ -126,6 +127,7 @@ int getFileBlock(char *filename){
 			dirName[dirNameIndex]='\0';
 			fileBlockIndex = goToFileFromParentDir(dirName,fileBlockIndex);
 			if(fileBlockIndex<0){
+				printf("[getFileBlock] Erro, bloco do arquivo filho não achado\n");
 				return -1;
 			}
 		}
@@ -239,6 +241,7 @@ int getFileNameAndPath(char *pathname, char *path, char *name){
 	}
 	if(lastNameStart==pathIndex)
 		return -1;
+	
 	path[lastNameStart-1]='\0';
 	int lastNameIndex=lastNameStart;
 	int nameIndex=0;
@@ -283,8 +286,10 @@ int writeDirData(int firstBlockNumber, DirData newDirData){
 int insertEntryInDir(int dirFirstBlockNumber,DirRecord newDirEntry){
 	unsigned char sectorBuffer[SECTOR_SIZE];
 	int sectorToUse = getFirstSectorOfBlock(dirFirstBlockNumber);
-	if(read_sector(sectorToUse,sectorBuffer)!=0)
+	if(read_sector(sectorToUse,sectorBuffer)!=0){
+		printf("[insertEntryInDir]Erro ao ler setor do arquivo de diretório\nSetor: %d\n",sectorToUse);
 		return -1;
+	}
 	DirData targetDirData = *(DirData*)(sectorBuffer+blockPointerSize);
 	int filesInDir = targetDirData.entryCount;
 	float block1DataSize = sizeof(unsigned int)+sizeof(DirData);
@@ -317,6 +322,7 @@ int insertEntryInDir(int dirFirstBlockNumber,DirRecord newDirEntry){
 }
 
 int getFirstSectorOfBlock(int blockNumber){
+	printf("Primeiro setor do bloco %d sendo lido\n",blockNumber);
 	int sectorsPerBlock =  getSectorsPerBlock(blockSize);
 	return firstSectorPartition1+(blockNumber*sectorsPerBlock);
 }

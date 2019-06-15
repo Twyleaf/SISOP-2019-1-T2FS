@@ -10,6 +10,7 @@ int main(){
 	//printPartition1DataSection();
 	printf("\nRetorno: %d\n",Ret);
 	printf("%d\n",getFileBlock("/"));
+	printf("Teste mkdir: %d\n", mkdir2("/teste"));
 	/*
 	int i;
 	for(i=0;i<1000;i++){

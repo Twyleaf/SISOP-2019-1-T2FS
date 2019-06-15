@@ -1,6 +1,7 @@
 
 /**
 */
+#include <stdio.h>
 #include <limits.h>
 #include <math.h>
 #include <string.h>
@@ -117,13 +118,22 @@ Função:	Função usada para criar um novo diretório.
 int mkdir2 (char *pathname) {
 	char path[MAX_FILE_NAME_SIZE+1];
 	char name[32];
-	if(getFileNameAndPath(pathname,path, name)==-1)
+	if(getFileNameAndPath(pathname,path, name)==-1){
+		printf("[mkdir2]Erro ao ler o path do arquivo\n");
 		return -1;
+	}
 	//TO DO: CRIAR TESTE SE HÁ ARQUIVO DE MESMO NOME NO DIRETÓRIO
 	int parentDirBlock = getFileBlock(path);
-	int firstBlockNumber = allocateBlock();
-	if(firstBlockNumber==-1)
+	if(parentDirBlock == -1){
+		printf("[mkdir2] Erro ao ler o bloco do diretório pai\nNome do diretório:%s\n",path);
 		return -1;
+
+	}
+	int firstBlockNumber = allocateBlock();
+	if(firstBlockNumber==-1){
+		printf("Erro ao alocar um bloco\n");
+		return -1;
+	}
 	
 	DirData newDirData;
 	strcpy(newDirData.name,name);
@@ -134,9 +144,10 @@ int mkdir2 (char *pathname) {
 	strcpy(newDirEntry.name,name);
 	newDirEntry.fileType = 0x01; // Tipo do arquivo: diretório (0x02) 
 	newDirEntry.dataPointer = firstBlockNumber;
-	if(insertEntryInDir(parentDirBlock,newDirEntry)==-1)
+	if(insertEntryInDir(parentDirBlock,newDirEntry)==-1){
+		printf("Erro ao inserir entrada em diretório\n");
 		return -1;
-	
+	}
 	return writeDirData(firstBlockNumber,newDirData);
 }
 
