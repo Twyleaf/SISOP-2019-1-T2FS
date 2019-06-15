@@ -298,33 +298,34 @@ int insertEntryInDir(int dirFirstBlockNumber,DirRecord newDirEntry){//TO DO: INC
 	float block1DataSize = sizeof(unsigned int)+sizeof(DirData);
 	float maxEntryCountBlock1= floor(block1DataSize/(float)sizeof(DirRecord));
 	float maxEntryCountRestBlocks = floor((float)sizeof(unsigned int)/(float)sizeof(DirRecord));
-	int blockToWrite;
-	
+	int blockToWrite=-1;
+	int blockToWriteByteOffset=-1;
 	if(maxEntryCountBlock1 >filesInDir){//se houver espaço no bloco 1
 		//escrever no bloco 1
-		if(writeRecordInBlock(newDirEntry,dirFirstBlockNumber,block1DataSize+filesInDir*sizeof(DirRecord))!=-1)
-			return -1;
-		return 0;
+		blockToWrite=dirFirstBlockNumber;
+		blockToWriteByteOffset=block1DataSize+(filesInDir*sizeof(DirRecord));
 	}else{
 		float blocksNeededAfterFirst = ((float)filesInDir-maxEntryCountBlock1)/maxEntryCountRestBlocks;
 		int lastBlock =getLastBlockInFile(dirFirstBlockNumber);
+		blockToWrite=lastBlock;
 		if(ceilf(blocksNeededAfterFirst) == blocksNeededAfterFirst){//Todos os blocos estão cheios, é preciso alocar um novo
-			int dirToInsertOffset = blockPointerSize;
+			blockToWriteByteOffset = blockPointerSize;
 			int nextBlockAddress =allocateBlock();
-			writeRecordInBlock(newDirEntry, lastBlock, dirToInsertOffset);
 			writeNextBlockPointer(lastBlock,nextBlockAddress);
-		}else{
+		}else{//Diretório usa mais de um bloco.
 			int entriesInBlock = filesInDir;
 			entriesInBlock-=maxEntryCountBlock1;
 			while(entriesInBlock>maxEntryCountRestBlocks){
-				entriesInBlock-=maxEntryCountRestBlocks;
-			}
-			int dirToInsertOffset = blockPointerSize+entriesInBlock*sizeof(DirRecord);
-			writeRecordInBlock(newDirEntry, lastBlock, dirToInsertOffset);
+				entriesInBlock-=maxEntryCountRestBlocks;//Calcula quantas entradas sobram para o último bloco,
+			}// contando que todos os blocos anteriores estão completamente cheios.
+			
+			blockToWriteByteOffset = blockPointerSize+entriesInBlock*sizeof(DirRecord);
 		}
 	}
-	
-	
+	if(writeRecordInBlock(newDirEntry,blockToWrite,blockToWriteByteOffset)==-1){
+		printf("[insertEntryInDir]Erro na adição da nova entrada na estrutura de dados do diretório\n");
+		return -1;
+	}
 	return 0;
 }
 
