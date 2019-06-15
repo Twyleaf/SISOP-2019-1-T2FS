@@ -75,5 +75,9 @@ int writeRecordInBlock(DirRecord newDirEntry, int blockToWriteEntry, int dirToIn
 
 int getLastBlockInFile(unsigned int fileFirstBlockNumber);
 
+int getSectorsPerBlock(int blockSizeBytes);
+
+int getBytesForBitmap();
+
 
 #endif

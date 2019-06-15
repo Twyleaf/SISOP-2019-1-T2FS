@@ -57,13 +57,12 @@ int readFSInfo(){
 
 int formatFSData(int sectorsPerBlock){
 	unsigned char sectorBuffer[SECTOR_SIZE];
-	int sectorsInPartition=lastSectorPartition1-firstSectorPartition1+1;
-	float blocksInPartition= floor(sectorsInPartition/sectorsPerBlock);
-	int bytesForBitmap = ceil(blocksInPartition/8.0);
 	int sectorByte;
 	for(sectorByte=0;sectorByte<SECTOR_SIZE;sectorByte++){
 		sectorBuffer[sectorByte]=UCHAR_MAX;
 	}
+	blockSize=SECTOR_SIZE*sectorsPerBlock;
+	int bytesForBitmap = getBytesForBitmap();
 	int sectorsForBitmap = ceil(bytesForBitmap/(float)SECTOR_SIZE);
 	int currentSector;
 	//printf("Setores usados para o bitmap %d\n",sectorsForBitmap);
@@ -75,7 +74,7 @@ int formatFSData(int sectorsPerBlock){
 		}
 	}
 	blockSectionStart = sectorsForBitmap + firstSectorPartition1 + 1;//Setor inicial para os blocos do sistema de arquivos.
-	blockSize=SECTOR_SIZE*sectorsPerBlock;//TO DO: Botar em estrutura do FS
+
 	
 	//Adicionar dados do sistema de arquivos (no primeiro setor, antes do bitmap)
 	T2FSInfo FSInfo;
@@ -194,7 +193,7 @@ int getDataFromBuffer(char *outputBuffer, int bufferDataStart, int dataSize, cha
 }
 
 int readBlock(int blockNumber, unsigned char* data){
-	int sectorsPerBlock = blockSize/SECTOR_SIZE;
+	int sectorsPerBlock = getSectorsPerBlock(blockSize);
 	int sectorPos = blockNumber * sectorsPerBlock;
 	int i, j;
 	unsigned char sectorBuffer[SECTOR_SIZE];
@@ -210,7 +209,7 @@ int readBlock(int blockNumber, unsigned char* data){
 }
 
 int writeBlock(int blockNumber, unsigned char* data){
-	int sectorsPerBlock = blockSize/SECTOR_SIZE;
+	int sectorsPerBlock = getSectorsPerBlock(blockSize);
 	int sectorPos = blockNumber * sectorsPerBlock;
 	int i, j;
 	unsigned char sectorBuffer[SECTOR_SIZE];
@@ -253,17 +252,15 @@ int getFileNameAndPath(char *pathname, char *path, char *name){
 }
 
 int allocateBlock(){
-	int sectorsPerBlock = blockSize / SECTOR_SIZE;
-	int sectorsInPartition=lastSectorPartition1-firstSectorPartition1+1;
-	float blocksInPartition= floor(sectorsInPartition/sectorsPerBlock);
-	float bytesForBitmap = ceil(blocksInPartition/8.0);
+	int sectorsPerBlock = getSectorsPerBlock(blockSize);
+	float bytesForBitmap = getBytesForBitmap(sectorsPerBlock);
 	int sectorsForBitmap = ceil(bytesForBitmap/(float)SECTOR_SIZE);
 	unsigned char bitmapBuffer[SECTOR_SIZE*sectorsForBitmap];
 	int currentSector;
 	//printf("Setores usados para o bitmap %d\n",sectorsForBitmap);
 	for(currentSector=0;currentSector<sectorsForBitmap;currentSector++)
 	{
-		if(read_sector(firstSectorPartition1+1+currentSector,sectorBuffer)!=0){//Ler os bits do bitmap.
+		if(read_sector(firstSectorPartition1+1+currentSector,(bitmapBuffer+(SECTOR_SIZE*currentSector)))!=0){//Ler os bits do bitmap.
 			return -1;
 			//printf("Erro ao escrever o bitmap");
 		}
@@ -320,7 +317,7 @@ int insertEntryInDir(int dirFirstBlockNumber,DirRecord newDirEntry){
 }
 
 int getFirstSectorOfBlock(int blockNumber){
-	int sectorsPerBlock = blockSize / SECTOR_SIZE;
+	int sectorsPerBlock =  getSectorsPerBlock(blockSize);
 	return firstSectorPartition1+(blockNumber*sectorsPerBlock);
 }
 
@@ -356,7 +353,17 @@ int getLastBlockInFile(unsigned int fileFirstBlockNumber){
 		nextBlock = *(unsigned int*)(sectorBuffer);
 	}
 	return currentFileBlock;
-	
-	
+}
+
+int getSectorsPerBlock(int blockSizeBytes){
+	return blockSizeBytes/((float)SECTOR_SIZE);
+}
+
+int getBytesForBitmap(){
+	int sectorsPerBlock = getSectorsPerBlock(blockSize);
+	int sectorsInPartition=lastSectorPartition1-firstSectorPartition1+1;
+	float blocksInPartition= floor(sectorsInPartition/sectorsPerBlock);
+	int bytesForBitmap = ceil(blocksInPartition/8.0);
+	return bytesForBitmap;
 }
 

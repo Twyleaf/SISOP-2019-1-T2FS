@@ -1,5 +1,5 @@
 #include <limits.h>    /* for CHAR_BIT */
-//https://stackoverflow.com/questions/1225998/what-is-a-bitmap-in-c
+
 enum { BITS_PER_WORD = sizeof(unsigned char) * CHAR_BIT };
 #define WORD_OFFSET(b) ((b) / BITS_PER_WORD)
 #define BIT_OFFSET(b)  ((b) % BITS_PER_WORD)
