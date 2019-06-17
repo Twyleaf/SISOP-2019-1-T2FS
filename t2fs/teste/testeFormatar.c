@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <string.h>
+
 #include "../include/t2fs.h"
 #include "../include/support.h"
 #include "../include/bitmap.h"
@@ -17,8 +19,17 @@ int main(){
 	dirData =*(DirData*)(blockBuffer+sizeof(unsigned int));
 	int block1DataSize = sizeof(unsigned int)+sizeof(DirData);
 	//block1DataSize+filesInDir
-	DirRecord dirRecord ;
-	dirRecord = *(DirRecord*)(blockBuffer+44);
+	DirRecord dirRecord;
+	memcpy(&dirRecord,blockBuffer+44,sizeof(DirRecord));
+	/*
+	DirRecord testeRecord;
+	testeRecord.name="TesteRecord";
+	testeRecord.fileType=2;
+	testeRecord.filePointer=123;
+	memcpy(blockBuffer+44,sizeof(DirRecord));*/
+
+	
+	//dirRecord = *(DirRecord*)(blockBuffer+44);
 	
 	printf("Nome do arquivo no diretório: %s, tipo: %d, ponteiro: %d\n",dirRecord.name,dirRecord.fileType,dirRecord.dataPointer);
 	/*

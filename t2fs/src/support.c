@@ -221,6 +221,12 @@ int writeBlock(int blockNumber, unsigned char* data){
 			sectorBuffer[j]=data[j + i * SECTOR_SIZE];
 		}
 		printf("[writeBlock] Escrevendo no setor %d\n",sectorPos+i);
+		/*
+		DirRecord dirRecord;
+		memcpy(&dirRecord,sectorBuffer+44,sizeof(DirRecord));
+		printf("[writeBlock]Nome do arquivo no diretório: %s, tipo: %d, ponteiro: %d\n",
+			dirRecord.name,dirRecord.fileType,dirRecord.dataPointer);
+			*/
 		if(write_sector(sectorPos + i, sectorBuffer) != 0){
 			return -1;
 		}
@@ -326,6 +332,7 @@ int insertEntryInDir(int dirFirstBlockNumber,DirRecord newDirEntry){//TO DO: INC
 			blockToWriteByteOffset = blockPointerSize+entriesInBlock*sizeof(DirRecord);
 		}
 	}
+	printf("[insertEntryInDir]Nome do arquivo no diretório: %s, tipo: %d, ponteiro: %d\n",newDirEntry.name,newDirEntry.fileType,newDirEntry.dataPointer);
 	if(writeRecordInBlock(newDirEntry,blockToWrite,blockToWriteByteOffset)==-1){
 		printf("[insertEntryInDir]Erro na adição da nova entrada na estrutura de dados do diretório\n");
 		return -1;
@@ -350,6 +357,7 @@ void writeNextBlockPointer(int blockNumber,unsigned int pointer){
 
 int writeRecordInBlock(DirRecord newDirEntry, int blockToWriteEntry, int dirToInsertOffset){
 	unsigned char blockBuffer[blockSize];
+	printf("[writeRecordInBlock]Nome do arquivo no diretório: %s, tipo: %d, ponteiro: %d\n",newDirEntry.name,newDirEntry.fileType,newDirEntry.dataPointer);
 	if(readBlock(blockToWriteEntry, blockBuffer)!=0)
 		return -1;
 	printf("[writeRecordInBlock]Record do diretório de nome %s sendo escrito no bloco %d com offset %d\n",

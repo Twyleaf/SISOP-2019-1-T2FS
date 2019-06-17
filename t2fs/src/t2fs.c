@@ -168,6 +168,7 @@ int mkdir2 (char *pathname) {
 	strcpy(newDirEntry.name,name);
 	newDirEntry.fileType = 0x02; // Tipo do arquivo: diretório (0x02) 
 	newDirEntry.dataPointer = firstBlockNumber;
+	printf("[mkdir2]Nome do arquivo no diretório: %s, tipo: %d, ponteiro: %d\n",newDirEntry.name,newDirEntry.fileType,newDirEntry.dataPointer);
 	if(insertEntryInDir(parentDirBlock,newDirEntry)==-1){
 		printf("[mkdir2]Erro ao inserir entrada em diretório\n");
 		return -1;
