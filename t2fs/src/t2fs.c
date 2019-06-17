@@ -209,7 +209,7 @@ int readdir2 (DIR2 handle, DIRENT2 *dentry) {
 	}
 	
 	// Check if the handle is valid
-	if ((handle >= 0) && (handle < 9))
+	if ((handle < 0) || (handle > 9))
 	{
 	  strcpy(dentry->name, open_files[handle].registro.name);
 	  dentry->fileType = open_files[handle].registro.file_type;
