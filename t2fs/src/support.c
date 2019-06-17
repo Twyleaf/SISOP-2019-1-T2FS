@@ -354,7 +354,7 @@ int writeRecordInBlock(DirRecord newDirEntry, int blockToWriteEntry, int dirToIn
 		return -1;
 	printf("[writeRecordInBlock]Record do diretório de nome %s sendo escrito no bloco %d com offset %d\n",
 		newDirEntry.name,blockToWriteEntry,dirToInsertOffset);
-	memcpy(blockBuffer, &newDirEntry, sizeof(newDirEntry));
+	memcpy(blockBuffer+dirToInsertOffset, (const unsigned char*)&newDirEntry, sizeof(newDirEntry));
 	if(writeBlock(blockToWriteEntry, blockBuffer)!=0)
 		return -1;
 	return SUCCEEDED;
