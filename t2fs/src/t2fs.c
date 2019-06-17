@@ -12,13 +12,13 @@
 /*-----------------------------------------------------------------------------
 Função:	Informa a identificação dos desenvolvedores do T2FS.
 -----------------------------------------------------------------------------*/
-int identify2 (char *name, int size) {
+int identify2 (char *name, int size) {/*
     	char components* = "Amaury Teixeira Cassola 287704\nBruno Ramos Toresan 291332\nDavid Mees Knijnik 264489";
 	if(size >= strlen(components)){
 		strncpy(name, components, strlen(components)+1);
 		return 0;
 	}
-	printf("Size is not sufficient\n");
+	printf("Size is not sufficient\n");*/
 	return -1;
 }
 

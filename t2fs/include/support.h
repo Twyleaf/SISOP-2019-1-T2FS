@@ -34,7 +34,7 @@ typedef struct {
 } Register;
 
 typedef struct Open_File_Data{
-	Register register;
+	//Register register;
 	int pointer_to_current_byte;
 } OpenFileData;
 
