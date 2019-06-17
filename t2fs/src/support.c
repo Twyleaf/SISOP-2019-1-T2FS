@@ -211,6 +211,7 @@ int readBlock(int blockNumber, unsigned char* data){
 }
 
 int writeBlock(int blockNumber, unsigned char* data){
+	printf("[writeBlock] Escrevendo no bloco %d\n",blockNumber);
 	int sectorsPerBlock = getSectorsPerBlock(blockSize);
 	int sectorPos = blockNumber * sectorsPerBlock;
 	int i, j;
@@ -219,6 +220,7 @@ int writeBlock(int blockNumber, unsigned char* data){
 		for(j = 0; j < SECTOR_SIZE; j++){
 			sectorBuffer[j]=data[j + i * SECTOR_SIZE];
 		}
+		printf("[writeBlock] Escrevendo no setor %d\n",sectorPos+i);
 		if(write_sector(sectorPos + i, sectorBuffer) != 0){
 			return -1;
 		}

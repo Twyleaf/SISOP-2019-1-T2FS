@@ -130,34 +130,37 @@ Função:	Função usada para criar um novo diretório.
 int mkdir2 (char *pathname) {
 	char path[MAX_FILE_NAME_SIZE+1];
 	char name[32];
+	printf("[mkdir2]Começando a ler o path do arquivo\n");
 	if(getFileNameAndPath(pathname,path, name)==-1){
 		printf("[mkdir2]Erro ao ler o path do arquivo\n");
 		return -1;
 	}
 	//TO DO: CRIAR TESTE SE HÁ ARQUIVO DE MESMO NOME NO DIRETÓRIO
+	printf("[mkdir2]lendo o bloco do diretório pai\n");
 	int parentDirBlock = getFileBlock(path);
 	if(parentDirBlock == -1){
 		printf("[mkdir2] Erro ao ler o bloco do diretório pai\nNome do diretório:%s\n",path);
 		return -1;
 
 	}
+	printf("[mkdir2] Alocando bloco para o arquivo\n");
 	int firstBlockNumber = allocateBlock();
 	if(firstBlockNumber==-1){
-		printf("Erro ao alocar um bloco\n");
+		printf("[mkdir2] Erro ao alocar um bloco\n");
 		return -1;
 	}
 	
 	DirData newDirData;
 	strcpy(newDirData.name,name);
-	newDirData.fileType = 0x01; // Tipo do arquivo: diretório (0x02) 
+	newDirData.fileType = 0x02; // Tipo do arquivo: diretório (0x02) 
 	newDirData.entryCount = 0;
 	
 	DirRecord newDirEntry;
 	strcpy(newDirEntry.name,name);
-	newDirEntry.fileType = 0x01; // Tipo do arquivo: diretório (0x02) 
+	newDirEntry.fileType = 0x02; // Tipo do arquivo: diretório (0x02) 
 	newDirEntry.dataPointer = firstBlockNumber;
 	if(insertEntryInDir(parentDirBlock,newDirEntry)==-1){
-		printf("Erro ao inserir entrada em diretório\n");
+		printf("[mkdir2]Erro ao inserir entrada em diretório\n");
 		return -1;
 	}
 	return writeDirData(firstBlockNumber,newDirData);
