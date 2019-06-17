@@ -10,17 +10,17 @@ int main(){
 	//printPartition1DataSection();
 	printf("\nRetorno: %d\n",Ret);
 	printf("%d\n",getFileBlock("/"));
-	printf("Teste mkdir: %d\n", mkdir2("/teste"));
+	printf("Teste mkdir: %d\n", mkdir2("/NomeArq"));
 	unsigned char blockBuffer[blockSize];
-	readBlock(1,blockBuffer);
+	readBlock(0,blockBuffer);
 	DirData dirData;
 	dirData =*(DirData*)(blockBuffer+sizeof(unsigned int));
 	int block1DataSize = sizeof(unsigned int)+sizeof(DirData);
 	//block1DataSize+filesInDir
 	DirRecord dirRecord ;
-	dirRecord = *(DirRecord*)(blockBuffer+block1DataSize);
+	dirRecord = *(DirRecord*)(blockBuffer+44);
 	
-	printf("Nome do arquivo no diretório: %s",dirRecord.name);
+	printf("Nome do arquivo no diretório: %s, tipo: %d, ponteiro: %d\n",dirRecord.name,dirRecord.fileType,dirRecord.dataPointer);
 	/*
 	int i;
 	for(i=0;i<1000;i++){

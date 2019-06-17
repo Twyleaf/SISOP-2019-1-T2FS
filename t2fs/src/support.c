@@ -256,6 +256,7 @@ int getFileNameAndPath(char *pathname, char *path, char *name){
 		lastNameIndex++;
 	}
 	name[nameIndex]='\0';
+	printf("[getFileNameAndPath] Arquivo de pathname %s, path %s e nome %s\n",pathname, path,name);
 	return 0;
 }
 
@@ -306,6 +307,7 @@ int insertEntryInDir(int dirFirstBlockNumber,DirRecord newDirEntry){//TO DO: INC
 		//escrever no bloco 1
 		blockToWrite=dirFirstBlockNumber;
 		blockToWriteByteOffset=block1DataSize+(filesInDir*sizeof(DirRecord));
+		printf("[insertEntryInDir] Entrada vai ser escrita no primeiro bloco, com offset %d\n",blockToWriteByteOffset);
 	}else{
 		float blocksNeededAfterFirst = ((float)filesInDir-maxEntryCountBlock1)/maxEntryCountRestBlocks;
 		int lastBlock =getLastBlockInFile(dirFirstBlockNumber);
@@ -350,7 +352,9 @@ int writeRecordInBlock(DirRecord newDirEntry, int blockToWriteEntry, int dirToIn
 	unsigned char blockBuffer[blockSize];
 	if(readBlock(blockToWriteEntry, blockBuffer)!=0)
 		return -1;
-	memcpy(blockBuffer, (DirRecord*)&newDirEntry, sizeof(newDirEntry));
+	printf("[writeRecordInBlock]Record do diretório de nome %s sendo escrito no bloco %d com offset %d\n",
+		newDirEntry.name,blockToWriteEntry,dirToInsertOffset);
+	memcpy(blockBuffer, &newDirEntry, sizeof(newDirEntry));
 	if(writeBlock(blockToWriteEntry, blockBuffer)!=0)
 		return -1;
 	return SUCCEEDED;
