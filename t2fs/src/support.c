@@ -48,9 +48,10 @@ int readFSInfo(){
 	if(read_sector(firstSectorPartition1,sectorBuffer) !=0){
 		return -1;
 	}
-	T2FSInfo* info = (T2FSInfo*)(sectorBuffer);
-	blockSectionStart = info->blockSectionStart;
-	blockSize = info->blockSize;
+	T2FSInfo info = *(T2FSInfo*)(sectorBuffer);
+	blockSectionStart = info.blockSectionStart;
+	blockSize = (int)info.blockSize;
+	printf("[ReadFSInfo] tamanho do bloco: %d\n",blockSize);
 	return SUCCEEDED;
 
 }
@@ -68,6 +69,7 @@ int formatFSData(int sectorsPerBlock){
 	//printf("Setores usados para o bitmap %d\n",sectorsForBitmap);
 	for(currentSector=0;currentSector<sectorsForBitmap;currentSector++)
 	{
+		printf("[formatFSData]Setor %d sendo escrito\n",firstSectorPartition1+1+currentSector);
 		if(write_sector(firstSectorPartition1+1+currentSector,sectorBuffer)!=0){//Escrever os bits do bitmap.
 			return -1;
 			//printf("Erro ao escrever o bitmap");
@@ -75,19 +77,20 @@ int formatFSData(int sectorsPerBlock){
 	}
 	blockSectionStart = sectorsForBitmap + firstSectorPartition1 + 1;//Setor inicial para os blocos do sistema de arquivos.
 
-	
+	printf("[formatFSData] tamanho do bloco: %d\n",blockSize);
+
 	//Adicionar dados do sistema de arquivos (no primeiro setor, antes do bitmap)
 	T2FSInfo FSInfo;
 	FSInfo.blockSectionStart = (unsigned int)blockSectionStart;
 	FSInfo.blockSize = (unsigned int)blockSize;
-	memcpy(sectorBuffer, (T2FSInfo*)&FSInfo, sizeof(T2FSInfo));//Escreve dados de T2FS no disco
+	memcpy(sectorBuffer, (unsigned char*)&FSInfo, sizeof(FSInfo));//Escreve dados de T2FS no disco
+
+	
 	if(write_sector(firstSectorPartition1,sectorBuffer)!=0){//FSInfo precisa ser menor que a partição
 		return -1;
 		//printf("Erro ao escrever os setores por bloco");
 	}
 	return 0;
-	
-	
 }
 
 void printPartition1DataSection(){
@@ -196,7 +199,7 @@ int getDataFromBuffer(char *outputBuffer, int bufferDataStart, int dataSize, cha
 
 int readBlock(int blockNumber, unsigned char* data){
 	int sectorsPerBlock = getSectorsPerBlock(blockSize);
-	int sectorPos = blockNumber * sectorsPerBlock;
+	int sectorPos =blockSectionStart + (blockNumber * sectorsPerBlock);
 	int i, j;
 	unsigned char sectorBuffer[SECTOR_SIZE];
 	for(i = 0; i < sectorsPerBlock; i++){
@@ -213,20 +216,20 @@ int readBlock(int blockNumber, unsigned char* data){
 int writeBlock(int blockNumber, unsigned char* data){
 	printf("[writeBlock] Escrevendo no bloco %d\n",blockNumber);
 	int sectorsPerBlock = getSectorsPerBlock(blockSize);
-	int sectorPos = blockNumber * sectorsPerBlock;
+	int sectorPos = blockSectionStart+(blockNumber * sectorsPerBlock);
 	int i, j;
 	unsigned char sectorBuffer[SECTOR_SIZE];
 	for(i = 0; i < sectorsPerBlock; i++){
 		for(j = 0; j < SECTOR_SIZE; j++){
 			sectorBuffer[j]=data[j + i * SECTOR_SIZE];
 		}
-		printf("[writeBlock] Escrevendo no setor %d\n",sectorPos+i);
 		/*
 		DirRecord dirRecord;
 		memcpy(&dirRecord,sectorBuffer+44,sizeof(DirRecord));
 		printf("[writeBlock]Nome do arquivo no diretório: %s, tipo: %d, ponteiro: %d\n",
 			dirRecord.name,dirRecord.fileType,dirRecord.dataPointer);
 			*/
+		printf("[writeBlock]Setor %d sendo escrito\n",sectorPos + i);
 		if(write_sector(sectorPos + i, sectorBuffer) != 0){
 			return -1;
 		}
@@ -268,8 +271,9 @@ int getFileNameAndPath(char *pathname, char *path, char *name){
 
 int allocateBlock(){
 	int sectorsPerBlock = getSectorsPerBlock(blockSize);
-	float bytesForBitmap = getBytesForBitmap(sectorsPerBlock);
+	int bytesForBitmap = getBytesForBitmap(sectorsPerBlock);//Excessão
 	int sectorsForBitmap = ceil(bytesForBitmap/(float)SECTOR_SIZE);
+	printf("[allocateBlock] Setores para bitmap: %d\n",sectorsForBitmap);
 	unsigned char bitmapBuffer[SECTOR_SIZE*sectorsForBitmap];
 	int currentSector;
 	//printf("Setores usados para o bitmap %d\n",sectorsForBitmap);
@@ -290,6 +294,7 @@ int writeDirData(int firstBlockNumber, DirData newDirData){
 		return -1;
 	int dirDataOffset = sizeof(int);//Ponteiro para próximo bloco no começo
 	memcpy(sectorBuffer+dirDataOffset, &newDirData, sizeof(DirData));//Escreve dados de T2FS no disco
+	printf("[writeDirData]Setor %d sendo escrito\n",sectorToUse);
 	if(write_sector(sectorToUse,sectorBuffer)!=0)
 		return -1;
 	return 0;
@@ -343,7 +348,7 @@ int insertEntryInDir(int dirFirstBlockNumber,DirRecord newDirEntry){//TO DO: INC
 int getFirstSectorOfBlock(int blockNumber){
 	printf("Primeiro setor do bloco %d sendo lido\n",blockNumber);
 	int sectorsPerBlock =  getSectorsPerBlock(blockSize);
-	return firstSectorPartition1+(blockNumber*sectorsPerBlock);
+	return blockSectionStart+(blockNumber*sectorsPerBlock);
 }
 
 void writeNextBlockPointer(int blockNumber,unsigned int pointer){
@@ -351,6 +356,7 @@ void writeNextBlockPointer(int blockNumber,unsigned int pointer){
 	unsigned char sectorBuffer[SECTOR_SIZE];
 	read_sector(sector,sectorBuffer);
 	memcpy(sectorBuffer, (unsigned int*)&pointer, sizeof(unsigned int));//Escreve ponteiro
+	printf("[writeNextBlockPointer]Setor %d sendo escrito\n",sector);
 	write_sector(sector,sectorBuffer);
 	
 }
@@ -384,7 +390,8 @@ int getLastBlockInFile(unsigned int fileFirstBlockNumber){
 }
 
 int getSectorsPerBlock(int blockSizeBytes){
-	return blockSizeBytes/((float)SECTOR_SIZE);
+	printf("[getSectorsPerBlock] Tamanho do bloco:%d\n",blockSizeBytes);
+	return blockSizeBytes/(SECTOR_SIZE);
 }
 
 int getBytesForBitmap(){
@@ -392,6 +399,7 @@ int getBytesForBitmap(){
 	int sectorsInPartition=lastSectorPartition1-firstSectorPartition1+1;
 	float blocksInPartition= floor(sectorsInPartition/sectorsPerBlock);
 	int bytesForBitmap = ceil(blocksInPartition/8.0);
+	printf("[getBytesForBitmap] Bytes para bitmap: %d\n", bytesForBitmap);
 	return bytesForBitmap;
 }
 
