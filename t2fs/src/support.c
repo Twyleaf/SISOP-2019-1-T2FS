@@ -277,14 +277,34 @@ int allocateBlock(){
 	unsigned char bitmapBuffer[SECTOR_SIZE*sectorsForBitmap];
 	int currentSector;
 	//printf("Setores usados para o bitmap %d\n",sectorsForBitmap);
-	for(currentSector=0;currentSector<sectorsForBitmap;currentSector++)
-	{
+	for(currentSector=0;currentSector<sectorsForBitmap;currentSector++){
 		if(read_sector(firstSectorPartition1+1+currentSector,(bitmapBuffer+(SECTOR_SIZE*currentSector)))!=0){//Ler os bits do bitmap.
 			return -1;
 			//printf("Erro ao escrever o bitmap");
 		}
 	}
-	return setAndReturnBit(bitmapBuffer, 0, bytesForBitmap);
+	int blockAddress= setAndReturnBit(bitmapBuffer, 0, bytesForBitmap);
+	for(currentSector=0;currentSector<sectorsForBitmap;currentSector++){
+		if(write_sector(firstSectorPartition1+1+currentSector,(bitmapBuffer+(SECTOR_SIZE*currentSector)))!=0){//Ler os bits do bitmap.
+			return -1;
+			//printf("Erro ao escrever o bitmap");
+		}
+	}
+	return blockAddress;
+}
+
+int allocateRootDirBlock(){
+	unsigned char bitmapFirstSectorBuffer[SECTOR_SIZE];
+	//printf("Setores usados para o bitmap %d\n",sectorsForBitmap);
+
+	if(read_sector(firstSectorPartition1+1,bitmapFirstSectorBuffer)!=0){//Ler os bits do bitmap.
+		return -1;
+	}
+	clearBit(bitmapFirstSectorBuffer, 0);
+	if(write_sector(firstSectorPartition1+1,bitmapFirstSectorBuffer)!=0){//escrever os bits do bitmap.
+		return -1;
+	}
+	return 0;
 }
 
 int writeDirData(int firstBlockNumber, DirData newDirData){
@@ -337,11 +357,14 @@ int insertEntryInDir(int dirFirstBlockNumber,DirRecord newDirEntry){//TO DO: INC
 			blockToWriteByteOffset = blockPointerSize+entriesInBlock*sizeof(DirRecord);
 		}
 	}
-	printf("[insertEntryInDir]Nome do arquivo no diretório: %s, tipo: %d, ponteiro: %d\n",newDirEntry.name,newDirEntry.fileType,newDirEntry.dataPointer);
+	//printf("[insertEntryInDir]Nome do arquivo no diretório: %s, tipo: %d, ponteiro: %d\n",newDirEntry.name,newDirEntry.fileType,newDirEntry.dataPointer);
 	if(writeRecordInBlock(newDirEntry,blockToWrite,blockToWriteByteOffset)==-1){
 		printf("[insertEntryInDir]Erro na adição da nova entrada na estrutura de dados do diretório\n");
 		return -1;
 	}
+	targetDirData.entryCount++;//Incrementar numero de entradas
+	printf("[insertEntryInDir]Numero de entradas no diretório: %d\n",targetDirData.entryCount);
+	writeDirData(dirFirstBlockNumber,targetDirData);
 	return 0;
 }
 

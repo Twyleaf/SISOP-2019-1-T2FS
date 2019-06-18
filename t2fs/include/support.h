@@ -71,6 +71,8 @@ int getFileNameAndPath(char *pathname, char *path, char *name);
 
 int allocateBlock();
 
+int allocateRootDirBlock();
+
 int writeDirData(int firstBlockNumber, DirData newDirData);
 
 int insertEntryInDir(int dirFirstBlockNumber,DirRecord newDirEntry);

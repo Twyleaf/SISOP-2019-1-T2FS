@@ -51,6 +51,7 @@ int format2 (int sectors_per_block) {
 			return -1;
 		}
 	}
+	allocateRootDirBlock();
 	DirData rootDirData;
 	strcpy(rootDirData.name,"/\0");
 	rootDirData.fileType =0x02;
@@ -155,8 +156,9 @@ int mkdir2 (char *pathname) {
 		return -1;
 
 	}
-	printf("[mkdir2] Alocando bloco para o arquivo\n");
 	int firstBlockNumber = allocateBlock();
+	printf("[mkdir2] Bloco %d Alocando para o arquivo\n",firstBlockNumber);
+
 	if(firstBlockNumber==-1){
 		printf("[mkdir2] Erro ao alocar um bloco\n");
 		return -1;
