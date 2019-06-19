@@ -69,7 +69,56 @@ Função:	Função usada para criar um novo arquivo no disco e abrí-lo,
 		assumirá um tamanho de zero bytes.
 -----------------------------------------------------------------------------*/
 FILE2 create2 (char *filename) {
-	return -1;
+	if(T2FSInitiated==0){
+		initT2FS();
+	}
+	char path[MAX_FILE_NAME_SIZE+1];
+	char name[32];
+	
+	if(isPathnameAlphanumeric(filename,MAX_FILE_NAME_SIZE+1)==-1){
+		return -1;
+	}
+	if(getFileNameAndPath(filename,path, name)==-1){
+		return -1;
+	}
+	int parentDirBlock = getFileBlock(path);
+	if(parentDirBlock == -1){
+		return -1;
+	}
+	
+	if(getFileType(parentDirBlock)!=0x02){//Se o diretório pai não é um arquivo de diretório
+		return -1;
+	}
+
+	if(fileExistsInDir(name,parentDirBlock)==1){
+		if(delete2(filename)>0){
+			return -1;
+		}
+		
+	}
+	int firstBlockNumber = allocateBlock();
+
+	if(firstBlockNumber==-1){
+		return -1;
+	}
+	
+	DirData newDirData;
+	strcpy(newDirData.name,name);
+	newDirData.fileType = 0x01; // Tipo do arquivo: regular (0x01) 
+	newDirData.entryCount = 0;
+	
+	DirRecord newDirEntry;
+	strcpy(newDirEntry.name,name);
+	newDirEntry.fileType = 0x01; // Tipo do arquivo: regular (0x01) 
+	newDirEntry.dataPointer = firstBlockNumber;
+	if(insertEntryInDir(parentDirBlock,newDirEntry)==-1){
+		return -1;
+	}
+	if(writeDirData(firstBlockNumber,newDirData)==-1){
+		return -1;
+	}
+	
+	return open2(filename);
 }
 
 /*-----------------------------------------------------------------------------
