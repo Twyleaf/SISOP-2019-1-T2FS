@@ -51,7 +51,7 @@ int readFSInfo(){
 	T2FSInfo info = *(T2FSInfo*)(sectorBuffer);
 	blockSectionStart = info.blockSectionStart;
 	blockSize = (int)info.blockSize;
-	printf("[ReadFSInfo] tamanho do bloco: %d\n",blockSize);
+	//printf("[ReadFSInfo] tamanho do bloco: %d\n",blockSize);
 	return SUCCEEDED;
 
 }
@@ -77,7 +77,7 @@ int formatFSData(int sectorsPerBlock){
 	}
 	blockSectionStart = sectorsForBitmap + firstSectorPartition1 + 1;//Setor inicial para os blocos do sistema de arquivos.
 
-	printf("[formatFSData] tamanho do bloco: %d\n",blockSize);
+	//printf("[formatFSData] tamanho do bloco: %d\n",blockSize);
 
 	//Adicionar dados do sistema de arquivos (no primeiro setor, antes do bitmap)
 	T2FSInfo FSInfo;
@@ -320,7 +320,7 @@ int writeDirData(int firstBlockNumber, DirData newDirData){
 	return 0;
 }
 
-int insertEntryInDir(int dirFirstBlockNumber,DirRecord newDirEntry){//TO DO: INCREMENTAR COUNT DE DIRETORIOS
+int insertEntryInDir(int dirFirstBlockNumber,DirRecord newDirEntry){
 	unsigned char sectorBuffer[SECTOR_SIZE];
 	int sectorToUse = getFirstSectorOfBlock(dirFirstBlockNumber);
 	if(read_sector(sectorToUse,sectorBuffer)!=0){
@@ -329,18 +329,30 @@ int insertEntryInDir(int dirFirstBlockNumber,DirRecord newDirEntry){//TO DO: INC
 	}
 	DirData targetDirData = *(DirData*)(sectorBuffer+blockPointerSize);
 	int filesInDir = targetDirData.entryCount;
-	float block1DataSize = sizeof(unsigned int)+sizeof(DirData);
-	float maxEntryCountBlock1= floor(block1DataSize/(float)sizeof(DirRecord));
-	float maxEntryCountRestBlocks = floor((float)sizeof(unsigned int)/(float)sizeof(DirRecord));
+	
+	/*O primeiro bloco de um diretório tem um ponteiro para o próximo e a estrutura de informações do diretório
+	* Apenas após estes dados que as entradas de fato começam, então calculamos esse offset para poder
+	* calcular quantas entradas de diretório cabem no primeiro bloco*/
+	int firstBlockFirstEntryOffset = sizeof(unsigned int)+sizeof(DirData);
+	int firstBlockEntryRegionSize = blockSize - firstBlockFirstEntryOffset;
+	int maxEntryCountFirstBlock= floor(firstBlockEntryRegionSize/(float)sizeof(DirRecord));
+
+	/*Quanto aos outros blocos, basta fazer o mesmo cálculo considerando apenas o ponteiro para o próximo
+	* bloco como offset*/
+	int otherBlocksFirstEntryOffset = sizeof(unsigned int);
+	int otherBlocksEntryRegionSize = blockSize - otherBlocksFirstEntryOffset;
+	int maxEntryCountOtherBlocks = floor(otherBlocksEntryRegionSize/(float)sizeof(DirRecord));
+	
 	int blockToWrite=-1;
 	int blockToWriteByteOffset=-1;
-	if(maxEntryCountBlock1 >filesInDir){//se houver espaço no bloco 1
+	printf("[insertEntryInDir] Numero de entradas que cabem no bloco 1: %d\n",maxEntryCountFirstBlock);
+	if(maxEntryCountFirstBlock >filesInDir){//se houver espaço no bloco 1
 		//escrever no bloco 1
 		blockToWrite=dirFirstBlockNumber;
-		blockToWriteByteOffset=block1DataSize+(filesInDir*sizeof(DirRecord));
+		blockToWriteByteOffset=firstBlockFirstEntryOffset+(filesInDir*sizeof(DirRecord));
 		printf("[insertEntryInDir] Entrada vai ser escrita no primeiro bloco, com offset %d\n",blockToWriteByteOffset);
 	}else{
-		float blocksNeededAfterFirst = ((float)filesInDir-maxEntryCountBlock1)/maxEntryCountRestBlocks;
+		float blocksNeededAfterFirst = ((float)filesInDir-maxEntryCountFirstBlock)/maxEntryCountOtherBlocks;
 		int lastBlock =getLastBlockInFile(dirFirstBlockNumber);
 		blockToWrite=lastBlock;
 		if(ceilf(blocksNeededAfterFirst) == blocksNeededAfterFirst){//Todos os blocos estão cheios, é preciso alocar um novo
@@ -349,9 +361,9 @@ int insertEntryInDir(int dirFirstBlockNumber,DirRecord newDirEntry){//TO DO: INC
 			writeNextBlockPointer(lastBlock,nextBlockAddress);
 		}else{//Diretório usa mais de um bloco.
 			int entriesInBlock = filesInDir;
-			entriesInBlock-=maxEntryCountBlock1;
-			while(entriesInBlock>maxEntryCountRestBlocks){
-				entriesInBlock-=maxEntryCountRestBlocks;//Calcula quantas entradas sobram para o último bloco,
+			entriesInBlock-=maxEntryCountFirstBlock;
+			while(entriesInBlock>maxEntryCountOtherBlocks){
+				entriesInBlock-=maxEntryCountOtherBlocks;//Calcula quantas entradas sobram para o último bloco,
 			}// contando que todos os blocos anteriores estão completamente cheios.
 			
 			blockToWriteByteOffset = blockPointerSize+entriesInBlock*sizeof(DirRecord);
@@ -369,7 +381,7 @@ int insertEntryInDir(int dirFirstBlockNumber,DirRecord newDirEntry){//TO DO: INC
 }
 
 int getFirstSectorOfBlock(int blockNumber){
-	printf("Primeiro setor do bloco %d sendo lido\n",blockNumber);
+	//printf("[getFirstSectorOfBlock]Primeiro setor do bloco %d sendo lido\n",blockNumber);
 	int sectorsPerBlock =  getSectorsPerBlock(blockSize);
 	return blockSectionStart+(blockNumber*sectorsPerBlock);
 }
@@ -386,7 +398,7 @@ void writeNextBlockPointer(int blockNumber,unsigned int pointer){
 
 int writeRecordInBlock(DirRecord newDirEntry, int blockToWriteEntry, int dirToInsertOffset){
 	unsigned char blockBuffer[blockSize];
-	printf("[writeRecordInBlock]Nome do arquivo no diretório: %s, tipo: %d, ponteiro: %d\n",newDirEntry.name,newDirEntry.fileType,newDirEntry.dataPointer);
+	//printf("[writeRecordInBlock]Nome do arquivo no diretório: %s, tipo: %d, ponteiro: %d\n",newDirEntry.name,newDirEntry.fileType,newDirEntry.dataPointer);
 	if(readBlock(blockToWriteEntry, blockBuffer)!=0)
 		return -1;
 	printf("[writeRecordInBlock]Record do diretório de nome %s sendo escrito no bloco %d com offset %d\n",
@@ -413,7 +425,7 @@ int getLastBlockInFile(unsigned int fileFirstBlockNumber){
 }
 
 int getSectorsPerBlock(int blockSizeBytes){
-	printf("[getSectorsPerBlock] Tamanho do bloco:%d\n",blockSizeBytes);
+	//printf("[getSectorsPerBlock] Tamanho do bloco:%d\n",blockSizeBytes);
 	return blockSizeBytes/(SECTOR_SIZE);
 }
 
@@ -422,7 +434,7 @@ int getBytesForBitmap(){
 	int sectorsInPartition=lastSectorPartition1-firstSectorPartition1+1;
 	float blocksInPartition= floor(sectorsInPartition/sectorsPerBlock);
 	int bytesForBitmap = ceil(blocksInPartition/8.0);
-	printf("[getBytesForBitmap] Bytes para bitmap: %d\n", bytesForBitmap);
+	//printf("[getBytesForBitmap] Bytes para bitmap: %d\n", bytesForBitmap);
 	return bytesForBitmap;
 }
 
