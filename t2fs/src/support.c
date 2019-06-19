@@ -131,13 +131,13 @@ int getFileBlock(char *filename){
 				dirNameIndex++;
 			}
 			dirName[dirNameIndex]='\0';
-
-			fileBlockIndex = goToFileFromParentDir(dirName,fileBlockIndex);
 			
 			if(getFileType(fileBlockIndex)!=0x02){//Se o diretório anterior não era realmente um arquivo de diretório
 				printf("[getFileBlock] Erro: arquivo em path não diretório\n");
 				return -1;
 			}
+			fileBlockIndex = goToFileFromParentDir(dirName,fileBlockIndex);
+			
 			printf("[getFileBlock] Bloco do arquivo durante iteração: %d\n",fileBlockIndex);
 			if(fileBlockIndex<0){
 				printf("[getFileBlock] Erro, bloco do arquivo filho não achado\n");

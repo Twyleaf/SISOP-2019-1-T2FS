@@ -159,8 +159,13 @@ int mkdir2 (char *pathname) {
 	if(parentDirBlock == -1){
 		printf("[mkdir2] Erro ao ler o bloco do diretório pai\nNome do diretório:%s\n",path);
 		return -1;
-
 	}
+	
+	if(getFileType(parentDirBlock)!=0x02){//Se o diretório pai não é um arquivo de diretório
+		printf("[mkdir2] Erro: arquivo em path não diretório\n");
+		return -1;
+	}
+
 	if(fileExistsInDir(name,parentDirBlock)==1){
 		printf("[mkdir2] Arquivo de nome %s já existe no diretório\n",name);
 		return -1;
