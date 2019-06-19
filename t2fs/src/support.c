@@ -131,7 +131,13 @@ int getFileBlock(char *filename){
 				dirNameIndex++;
 			}
 			dirName[dirNameIndex]='\0';
+
 			fileBlockIndex = goToFileFromParentDir(dirName,fileBlockIndex);
+			
+			if(getFileType(fileBlockIndex)!=0x02){//Se o diretório anterior não era realmente um arquivo de diretório
+				printf("[getFileBlock] Erro: arquivo em path não diretório\n");
+				return -1;
+			}
 			printf("[getFileBlock] Bloco do arquivo durante iteração: %d\n",fileBlockIndex);
 			if(fileBlockIndex<0){
 				printf("[getFileBlock] Erro, bloco do arquivo filho não achado\n");
@@ -463,4 +469,14 @@ int isPathnameAlphanumeric(char* pathname, int maxPathSize){
 			return -1;
 	}
 	return 0;
+}
+
+int getFileType(int firstBlockNumber){
+	unsigned char sectorBuffer[SECTOR_SIZE];
+	int sectorToUse = getFirstSectorOfBlock(firstBlockNumber);
+	if(read_sector(sectorToUse,sectorBuffer)!=0)
+		return -1;
+	DirData dirDataToRead = *(DirData*)(sectorBuffer+blockPointerSize);
+	printf("[getFileType] Tipo do arquivo de bloco %d: %d\n",firstBlockNumber,dirDataToRead.fileType);
+	return dirDataToRead.fileType;
 }

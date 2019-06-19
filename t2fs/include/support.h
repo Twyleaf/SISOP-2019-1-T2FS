@@ -93,4 +93,6 @@ int fileExistsInDir(char* fileName, int parentDirFirstBlock);
 
 int isPathnameAlphanumeric(char* pathname,int maxPathSize);
 
+int getFileType(int firstBlockNumber);
+
 #endif
