@@ -5,10 +5,13 @@
 
 #define SUCCEEDED 0
 
+#include <stdbool.h>
+
 typedef struct Dir_Record{
+    bool isValid;                       /* NOVO bit de validade da entrada (indica se esta entrada pode se sobrscrita ou não)*/                     
     char    name[32]; 					/* Nome do arquivo*/
     unsigned char    fileType;			/* Tipo do arquivo: regular (0x01) ou diretório (0x02) */
-    //DWORD   fileSize;                   /* Numero de bytes do arquivo   */
+    //DWORD   fileSize;                 /* Numero de bytes do arquivo   */
 	unsigned int	dataPointer	;		/* Ponteiro para primeiro bloco de dados do arquivo */
 } DirRecord;
 
@@ -89,5 +92,11 @@ int getSectorsPerBlock(int blockSizeBytes);
 
 int getBytesForBitmap();
 
+//=========================================FUNÇÕES NOVAS=======================================
+
+
+int setFileBlocksAsUnused(int firstBlock);
+
+int SetDirectoryEntryAsInvalid(unsigned int directoryFirstBlockNumber, char* filename);
 
 #endif
