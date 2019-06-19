@@ -989,7 +989,7 @@ int SetDirectoryEntryAsInvalid(unsigned int directoryFirstBlockNumber, char* fil
 *	Dado um buffer em memória de tamanho adequado, lê o bitmap inteiro do disco e o escreve no buffer (para que se possam fazer leituras e atualizações deste)
 *	Retorna 0 se conseguiu fazer a leitura inteira do bitmap com sucesso, -1 caso contrário
 */
-int readBitmap(char* bitmap){
+int readBitmap(unsigned char* bitmap){
 	
 	unsigned int firstBitmapSector = firstSectorPartition1+1; //o bitmap inicia no segundo setor da partição
 	int bitmapSizeInSectors = ceil((float)getBytesForBitmap()/(float)SECTOR_SIZE);
@@ -1011,7 +1011,7 @@ int readBitmap(char* bitmap){
 *	Dado um buffer de tamanho adequado, sobrescreve o bitmap em disco com o conteúdo deste buffer
 *	Retorna 0 se conseguiu realizar todas as escritas com sucesso, -1 caso contrário
 */
-int writeBitmap(char* buffer){
+int writeBitmap(unsigned char* buffer){
 	int firstBitmapSector = firstSectorPartition1+1; //o bitmap inicia no segundo setor da partição
 	int bitmapSizeInSectors = ceil((float)getBytesForBitmap()/(float)SECTOR_SIZE);
 	int currentBitmapSectorOffset = 0;
@@ -1029,7 +1029,7 @@ int writeBitmap(char* buffer){
 *	Liga (ou seja, escreve 1) o blockNumber-ésimo bit de um bitmap, significando que o bloco de número blockNumber está vazio e pode ser sobrescrito
 *	Retorna 0 se executou com sucesso, -1 caso contrário
 */
-void setBlockUnused(int blockNumber, char* bitmap){
+void setBlockUnused(int blockNumber, unsigned char* bitmap){
 	setBit(bitmap, blockNumber);
 }
 
@@ -1037,7 +1037,7 @@ void setBlockUnused(int blockNumber, char* bitmap){
 *	Desliga (ou seja, escreve 0) o blockNumber-ésimo bit de um bitmap, significando que o bloco de número blockNumber está sendo utilizado por um arquivo e não pode ser sobrescrito
 *	Retorna 0 se executou com sucesso, -1 caso contrário
 */
-void setBlockUsed(int blockNumber, char* bitmap){
+void setBlockUsed(int blockNumber, unsigned char* bitmap){
 	clearBit(bitmap, blockNumber);
 }
 
@@ -1094,7 +1094,7 @@ int setFileBlocksAsUnused(int firstBlock){
 		fileNextBlockNumber = *(unsigned int*)sectorBuffer; //o ponteiro para o próximo bloco está nos primeiros bytes do setor, 
 															//então basta recuperar o valor apontado por ele como se ele fosse um ponteiro para unsigned int
 		/*Invalidamos o ponteiro do bloco atual*/
-		memcpy(sectorBuffer, invalidPointer, sizeof(unsigned int));
+		memcpy(sectorBuffer, &invalidPointer, sizeof(unsigned int));
 		
 		/*Escrevemos o primeiro setor do bloco atual no disco */
 		if(write_sector(currentBlockFirstSectorNumber, sectorBuffer) != 0){
