@@ -99,4 +99,10 @@ int setFileBlocksAsUnused(int firstBlock);
 
 int SetDirectoryEntryAsInvalid(unsigned int directoryFirstBlockNumber, char* filename);
 
+int fileExistsInDir(char* fileName, int parentDirFirstBlock);
+
+int isPathnameAlphanumeric(char* pathname,int maxPathSize);
+
+int getFileType(int firstBlockNumber);
+
 #endif

@@ -68,7 +68,56 @@ Função:	Função usada para criar um novo arquivo no disco e abrí-lo,
 		assumirá um tamanho de zero bytes.
 -----------------------------------------------------------------------------*/
 FILE2 create2 (char *filename) {
-	return -1;
+	if(T2FSInitiated==0){
+		initT2FS();
+	}
+	char path[MAX_FILE_NAME_SIZE+1];
+	char name[32];
+	
+	if(isPathnameAlphanumeric(filename,MAX_FILE_NAME_SIZE+1)==-1){
+		return -1;
+	}
+	if(getFileNameAndPath(filename,path, name)==-1){
+		return -1;
+	}
+	int parentDirBlock = getFileBlock(path);
+	if(parentDirBlock == -1){
+		return -1;
+	}
+	
+	if(getFileType(parentDirBlock)!=0x02){//Se o diretório pai não é um arquivo de diretório
+		return -1;
+	}
+
+	if(fileExistsInDir(name,parentDirBlock)==1){
+		if(delete2(filename)>0){
+			return -1;
+		}
+		
+	}
+	int firstBlockNumber = allocateBlock();
+
+	if(firstBlockNumber==-1){
+		return -1;
+	}
+	
+	DirData newDirData;
+	strcpy(newDirData.name,name);
+	newDirData.fileType = 0x01; // Tipo do arquivo: regular (0x01) 
+	newDirData.entryCount = 0;
+	
+	DirRecord newDirEntry;
+	strcpy(newDirEntry.name,name);
+	newDirEntry.fileType = 0x01; // Tipo do arquivo: regular (0x01) 
+	newDirEntry.dataPointer = firstBlockNumber;
+	if(insertEntryInDir(parentDirBlock,newDirEntry)==-1){
+		return -1;
+	}
+	if(writeDirData(firstBlockNumber,newDirData)==-1){
+		return -1;
+	}
+	
+	return open2(filename);
 }
 
 /*-----------------------------------------------------------------------------
@@ -174,7 +223,61 @@ int seek2 (FILE2 handle, DWORD offset) {
 Função:	Função usada para criar um novo diretório.
 -----------------------------------------------------------------------------*/
 int mkdir2 (char *pathname) {
-	return -1;
+	if(T2FSInitiated==0){
+		initT2FS();
+	}
+	char path[MAX_FILE_NAME_SIZE+1];
+	char name[32];
+	
+	if(isPathnameAlphanumeric(pathname,MAX_FILE_NAME_SIZE+1)==-1){
+		printf("[mkdir2]Erro: nome de arquivo inválido\n");
+		return -1;
+	}
+	printf("[mkdir2]Começando a ler o path do arquivo\n");
+	if(getFileNameAndPath(pathname,path, name)==-1){
+		printf("[mkdir2]Erro ao ler o path do arquivo\n");
+		return -1;
+	}
+	//TO DO: CRIAR TESTE SE HÁ ARQUIVO DE MESMO NOME NO DIRETÓRIO
+	printf("[mkdir2]lendo o bloco do diretório pai\n");
+	int parentDirBlock = getFileBlock(path);
+	if(parentDirBlock == -1){
+		printf("[mkdir2] Erro ao ler o bloco do diretório pai\nNome do diretório:%s\n",path);
+		return -1;
+	}
+	
+	if(getFileType(parentDirBlock)!=0x02){//Se o diretório pai não é um arquivo de diretório
+		printf("[mkdir2] Erro: arquivo em path não diretório\n");
+		return -1;
+	}
+
+	if(fileExistsInDir(name,parentDirBlock)==1){
+		printf("[mkdir2] Arquivo de nome %s já existe no diretório\n",name);
+		return -1;
+	}
+	int firstBlockNumber = allocateBlock();
+	printf("[mkdir2] Bloco %d Alocando para o arquivo\n",firstBlockNumber);
+
+	if(firstBlockNumber==-1){
+		printf("[mkdir2] Erro ao alocar um bloco\n");
+		return -1;
+	}
+	
+	DirData newDirData;
+	strcpy(newDirData.name,name);
+	newDirData.fileType = 0x02; // Tipo do arquivo: diretório (0x02) 
+	newDirData.entryCount = 0;
+	
+	DirRecord newDirEntry;
+	strcpy(newDirEntry.name,name);
+	newDirEntry.fileType = 0x02; // Tipo do arquivo: diretório (0x02) 
+	newDirEntry.dataPointer = firstBlockNumber;
+	printf("[mkdir2]Nome do arquivo no diretório: %s, tipo: %d, ponteiro: %d\n",newDirEntry.name,newDirEntry.fileType,newDirEntry.dataPointer);
+	if(insertEntryInDir(parentDirBlock,newDirEntry)==-1){
+		printf("[mkdir2]Erro ao inserir entrada em diretório\n");
+		return -1;
+	}
+	return writeDirData(firstBlockNumber,newDirData);
 }
 
 /*-----------------------------------------------------------------------------

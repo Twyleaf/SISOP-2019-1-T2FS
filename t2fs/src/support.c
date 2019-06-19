@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <ctype.h>
 #include "../include/support.h"
 #include "../include/apidisk.h"
 #include "../include/bitmap.h"
@@ -94,7 +95,7 @@ int readFSInfo(){
 	T2FSInfo info = *(T2FSInfo*)(sectorBuffer);
 	blockSectionStart = info.blockSectionStart;
 	blockSize = (int)info.blockSize;
-	printf("[ReadFSInfo] tamanho do bloco: %d\n",blockSize);
+	//printf("[ReadFSInfo] tamanho do bloco: %d\n",blockSize);
 	return SUCCEEDED;
 
 }
@@ -120,7 +121,7 @@ int formatFSData(int sectorsPerBlock){
 	}
 	blockSectionStart = sectorsForBitmap + firstSectorPartition1 + 1;//Setor inicial para os blocos do sistema de arquivos.
 
-	printf("[formatFSData] tamanho do bloco: %d\n",blockSize);
+	//printf("[formatFSData] tamanho do bloco: %d\n",blockSize);
 
 	//Adicionar dados do sistema de arquivos (no primeiro setor, antes do bitmap)
 	T2FSInfo FSInfo;
@@ -162,20 +163,31 @@ int getFileBlock(char *filename){
 	int wordIndex;
 	int dirNameIndex=0;
 	int fileBlockIndex=rootDirBlockNumber;
-	while(fileCurrentChar!= '\0'){
+	while(filename[filenameIndex]!= '\0'){
 		filenameIndex++;
 		fileCurrentChar=filename[filenameIndex];
-		if(fileCurrentChar=='/'){
+		if((filename[filenameIndex]=='/')||(filename[filenameIndex+1]=='\0')){
+			if(filename[filenameIndex+1]=='\0')
+				filenameIndex++;
 			for(wordIndex=dirNameStart;wordIndex < filenameIndex;wordIndex++){
 				dirName[dirNameIndex] = filename[wordIndex];
 				dirNameIndex++;
 			}
 			dirName[dirNameIndex]='\0';
+			
+			if(getFileType(fileBlockIndex)!=0x02){//Se o diretório anterior não era realmente um arquivo de diretório
+				printf("[getFileBlock] Erro: arquivo em path não diretório\n");
+				return -1;
+			}
 			fileBlockIndex = goToFileFromParentDir(dirName,fileBlockIndex);
+			
+			printf("[getFileBlock] Bloco do arquivo durante iteração: %d\n",fileBlockIndex);
 			if(fileBlockIndex<0){
 				printf("[getFileBlock] Erro, bloco do arquivo filho não achado\n");
 				return -1;
 			}
+			dirNameIndex=0;
+			dirNameStart = filenameIndex+1;
 		}
 	}
 	return fileBlockIndex;
@@ -202,6 +214,7 @@ int goToFileFromParentDir(char* dirName,int parentDirBlockNumber){
 		}
 		while((dirEntryIndex<filesInDir)&&(dirOffset<=blockSize-dirEntrySize)){//Enquanto não ler todas as entradas e não exceder tamanho do bloco
 			record = *(DirRecord*)(blockBuffer+dirOffset);//Lê entrada
+			printf("[goToFileFromParentDir]Comparação de nome %s VS %s Na entrada com offset %d\n",dirName,record.name,dirOffset);
 			if(strcmp(dirName,record.name)==0){//Se nome é o sendo procurado, retorna número do bloco do arquivo.
 				return record.dataPointer;
 			}
@@ -211,7 +224,7 @@ int goToFileFromParentDir(char* dirName,int parentDirBlockNumber){
 			}
 			dirOffset+=dirEntrySize;//Adiciona ao offset(espaço entre começo do buffer até entrada a ser lida) o tamanho da entrada já lida.
 		}
-		dirOffset = blockPointerSize+ dirEntrySize;//Reseta offset para o começo das entradas no bloco
+		dirOffset = blockPointerSize;//Reseta offset para o começo das entradas no bloco
 		if(hasNextBlock==1){//		Lê próximo bloco, se houver
 			if(readBlock(blockToRead,blockBuffer)!=0){
 				return -1;
@@ -750,7 +763,7 @@ int insertEntryInDir(int directoryFirstBlockNumber,DirRecord newDirEntry){//TO D
 }
 
 int getFirstSectorOfBlock(int blockNumber){
-	printf("Primeiro setor do bloco %d sendo lido\n",blockNumber);
+	//printf("[getFirstSectorOfBlock]Primeiro setor do bloco %d sendo lido\n",blockNumber);
 	int sectorsPerBlock =  getSectorsPerBlock(blockSize);
 	return blockSectionStart+(blockNumber*sectorsPerBlock);
 }
@@ -766,13 +779,13 @@ void writeNextBlockPointer(int blockNumber,unsigned int pointer){
 }
 
 int writeRecordInBlock(DirRecord newDirEntry, int blockToWriteEntry, int dirToInsertOffset){
-	unsigned char* blockBuffer = (unsigned char*)malloc(sizeof(unsigned char)*blockSize);
+	unsigned char* blockBuffer = createBlockBuffer();
 	printf("[writeRecordInBlock]Nome do arquivo no diretório: %s, tipo: %d, ponteiro: %d\n",newDirEntry.name,newDirEntry.fileType,newDirEntry.dataPointer);
 	if(readBlock(blockToWriteEntry, blockBuffer)!=0)
 		return -1;
 	printf("[writeRecordInBlock]Record do diretório de nome %s sendo escrito no bloco %d com offset %d\n",
 		newDirEntry.name,blockToWriteEntry,dirToInsertOffset);
-	memcpy(blockBuffer+dirToInsertOffset, (const unsigned char*)&newDirEntry, sizeof(newDirEntry));
+	memcpy(blockBuffer[dirToInsertOffset], (const unsigned char*)&newDirEntry, sizeof(newDirEntry));
 	if(writeBlock(blockToWriteEntry, blockBuffer)!=0)
 		return -1;
 	return SUCCEEDED;
@@ -794,7 +807,7 @@ int getLastBlockInFile(unsigned int fileFirstBlockNumber){
 }
 
 int getSectorsPerBlock(int blockSizeBytes){
-	printf("[getSectorsPerBlock] Tamanho do bloco:%d\n",blockSizeBytes);
+	//printf("[getSectorsPerBlock] Tamanho do bloco:%d\n",blockSizeBytes);
 	return blockSizeBytes/(SECTOR_SIZE);
 }
 
@@ -803,7 +816,7 @@ int getBytesForBitmap(){
 	int sectorsInPartition=lastSectorPartition1-firstSectorPartition1+1;
 	float blocksInPartition= floor(sectorsInPartition/sectorsPerBlock);
 	int bytesForBitmap = ceil(blocksInPartition/8.0);
-	printf("[getBytesForBitmap] Bytes para bitmap: %d\n", bytesForBitmap);
+	//printf("[getBytesForBitmap] Bytes para bitmap: %d\n", bytesForBitmap);
 	return bytesForBitmap;
 }
 
@@ -1125,3 +1138,31 @@ int setFileBlocksAsUnused(int firstBlock){
 	return 0;
 }
 
+int fileExistsInDir(char* fileName, int parentDirFirstBlock){
+	int fileBlock = goToFileFromParentDir(fileName, parentDirFirstBlock);
+	if(fileBlock<0){
+		return 0;
+	}else return 1;
+}
+
+int isPathnameAlphanumeric(char* pathname, int maxPathSize){
+	int pathnameIndex=0;
+	while(pathname[pathnameIndex]!= '\0'){
+		if((isalnum(pathname[pathnameIndex])==0)&&(pathname[pathnameIndex]!='/'))
+			return -1;
+		pathnameIndex++;
+		if(pathnameIndex>maxPathSize)
+			return -1;
+	}
+	return 0;
+}
+
+int getFileType(int firstBlockNumber){
+	unsigned char sectorBuffer[SECTOR_SIZE];
+	int sectorToUse = getFirstSectorOfBlock(firstBlockNumber);
+	if(read_sector(sectorToUse,sectorBuffer)!=0)
+		return -1;
+	DirData dirDataToRead = *(DirData*)(sectorBuffer+blockPointerSize);
+	printf("[getFileType] Tipo do arquivo de bloco %d: %d\n",firstBlockNumber,dirDataToRead.fileType);
+	return dirDataToRead.fileType;
+}
