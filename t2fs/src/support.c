@@ -170,6 +170,7 @@ int goToFileFromParentDir(char* dirName,int parentDirBlockNumber){
 		}
 		while((dirEntryIndex<filesInDir)&&(dirOffset<=blockSize-dirEntrySize)){//Enquanto não ler todas as entradas e não exceder tamanho do bloco
 			record = *(DirRecord*)(blockBuffer+dirOffset);//Lê entrada
+			printf("[goToFileFromParentDir]Comparação de nome %s VS %s Na entrada com offset %d\n",dirName,record.name,dirOffset);
 			if(strcmp(dirName,record.name)==0){//Se nome é o sendo procurado, retorna número do bloco do arquivo.
 				return record.dataPointer;
 			}
@@ -179,7 +180,7 @@ int goToFileFromParentDir(char* dirName,int parentDirBlockNumber){
 			}
 			dirOffset+=dirEntrySize;//Adiciona ao offset(espaço entre começo do buffer até entrada a ser lida) o tamanho da entrada já lida.
 		}
-		dirOffset = blockPointerSize+ dirEntrySize;//Reseta offset para o começo das entradas no bloco
+		dirOffset = blockPointerSize;//Reseta offset para o começo das entradas no bloco
 		if(hasNextBlock==1){//		Lê próximo bloco, se houver
 			if(readBlock(blockToRead,blockBuffer)!=0){
 				return -1;
@@ -359,12 +360,13 @@ int insertEntryInDir(int dirFirstBlockNumber,DirRecord newDirEntry){
 	}else{
 		float blocksNeededAfterFirst = ((float)filesInDir-maxEntryCountFirstBlock)/maxEntryCountOtherBlocks;
 		int lastBlock =getLastBlockInFile(dirFirstBlockNumber);
-		blockToWrite=lastBlock;
 		if(ceilf(blocksNeededAfterFirst) == blocksNeededAfterFirst){//Todos os blocos estão cheios, é preciso alocar um novo
 			blockToWriteByteOffset = blockPointerSize;
 			int nextBlockAddress =allocateBlock();
+			blockToWrite=nextBlockAddress;
 			writeNextBlockPointer(lastBlock,nextBlockAddress);
 		}else{//Diretório usa mais de um bloco.
+			blockToWrite=lastBlock;
 			int entriesInBlock = filesInDir;
 			entriesInBlock-=maxEntryCountFirstBlock;
 			while(entriesInBlock>maxEntryCountOtherBlocks){
