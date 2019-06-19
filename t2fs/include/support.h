@@ -89,5 +89,7 @@ int getSectorsPerBlock(int blockSizeBytes);
 
 int getBytesForBitmap();
 
+int fileExistsInDir(char* fileName, int parentDirFirstBlock);
+
 
 #endif

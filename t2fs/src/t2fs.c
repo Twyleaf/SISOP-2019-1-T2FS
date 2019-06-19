@@ -156,6 +156,10 @@ int mkdir2 (char *pathname) {
 		return -1;
 
 	}
+	if(fileExistsInDir(name,parentDirBlock)==1){
+		printf("[mkdir2] Arquivo de nome %s já existe no diretório\n",name);
+		return -1;
+	}
 	int firstBlockNumber = allocateBlock();
 	printf("[mkdir2] Bloco %d Alocando para o arquivo\n",firstBlockNumber);
 

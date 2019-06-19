@@ -438,3 +438,10 @@ int getBytesForBitmap(){
 	return bytesForBitmap;
 }
 
+int fileExistsInDir(char* fileName, int parentDirFirstBlock){
+	int fileBlock = goToFileFromParentDir(fileName, parentDirFirstBlock);
+	if(fileBlock<0){
+		return 0;
+	}else return 1;
+}
+
