@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <ctype.h>
 #include "../include/support.h"
 #include "../include/apidisk.h"
 #include "../include/bitmap.h"
@@ -452,3 +453,14 @@ int fileExistsInDir(char* fileName, int parentDirFirstBlock){
 	}else return 1;
 }
 
+int isPathnameAlphanumeric(char* pathname, int maxPathSize){
+	int pathnameIndex=0;
+	while(pathname[pathnameIndex]!= '\0'){
+		if((isalnum(pathname[pathnameIndex])==0)&&(pathname[pathnameIndex]!='/'))
+			return -1;
+		pathnameIndex++;
+		if(pathnameIndex>maxPathSize)
+			return -1;
+	}
+	return 0;
+}

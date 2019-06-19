@@ -91,5 +91,6 @@ int getBytesForBitmap();
 
 int fileExistsInDir(char* fileName, int parentDirFirstBlock);
 
+int isPathnameAlphanumeric(char* pathname,int maxPathSize);
 
 #endif

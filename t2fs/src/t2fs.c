@@ -143,6 +143,11 @@ int mkdir2 (char *pathname) {
 	}
 	char path[MAX_FILE_NAME_SIZE+1];
 	char name[32];
+	
+	if(isPathnameAlphanumeric(pathname,MAX_FILE_NAME_SIZE+1)==-1){
+		printf("[mkdir2]Erro: nome de arquivo inválido\n");
+		return -1;
+	}
 	printf("[mkdir2]Começando a ler o path do arquivo\n");
 	if(getFileNameAndPath(pathname,path, name)==-1){
 		printf("[mkdir2]Erro ao ler o path do arquivo\n");
