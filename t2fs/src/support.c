@@ -119,20 +119,25 @@ int getFileBlock(char *filename){
 	int wordIndex;
 	int dirNameIndex=0;
 	int fileBlockIndex=rootDirBlockNumber;
-	while(fileCurrentChar!= '\0'){
+	while(filename[filenameIndex]!= '\0'){
 		filenameIndex++;
 		fileCurrentChar=filename[filenameIndex];
-		if(fileCurrentChar=='/'){
+		if((filename[filenameIndex]=='/')||(filename[filenameIndex+1]=='\0')){
+			if(filename[filenameIndex+1]=='\0')
+				filenameIndex++;
 			for(wordIndex=dirNameStart;wordIndex < filenameIndex;wordIndex++){
 				dirName[dirNameIndex] = filename[wordIndex];
 				dirNameIndex++;
 			}
 			dirName[dirNameIndex]='\0';
 			fileBlockIndex = goToFileFromParentDir(dirName,fileBlockIndex);
+			printf("[getFileBlock] Bloco do arquivo durante iteração: %d\n",fileBlockIndex);
 			if(fileBlockIndex<0){
 				printf("[getFileBlock] Erro, bloco do arquivo filho não achado\n");
 				return -1;
 			}
+			dirNameIndex=0;
+			dirNameStart = filenameIndex+1;
 		}
 	}
 	return fileBlockIndex;
