@@ -7,23 +7,31 @@
 
 
 int main(){
-	printf("\nRetorno: %d\n",format2(2));
-	FILE2 handle = create2("/arquivo");
-	printf("\nprimeiro bloco %d", open_files[(int)handle].fileRecord.dataPointer);
-	printf("\n\n=============================================================\n");
-	printf("\n\n=============================================================\n");
-	unsigned char* cu = (unsigned char*)malloc(sizeof(unsigned char)*10);
-	cu[1] = 1;
-	cu[2] = 2;
-	cu[3] = 3;
-	read2(handle, cu, 10);
+	printf("\nRetorno format2: %d\n",format2(2));
+	FILE2 handle1 = create2("/NomeArq");
+	printf("Teste create2: %d\n", handle1);
+	char stringTest[1000] = "testando";
+	int size=1000;
+	printf("Teste write2: %d\n", write2(handle1,stringTest,size));
+	unsigned char* blockBuffer = createBlockBuffer();
+	readBlock(0,blockBuffer);
+	DirData dirData;
+	dirData =*(DirData*)(blockBuffer+sizeof(unsigned int));
+	int block1DataSize = sizeof(unsigned int)+sizeof(DirData);
+	DirRecord dirRecord;
+	memcpy(&dirRecord,&blockBuffer[block1DataSize],sizeof(DirRecord));
+	
+	printf("Nome do arquivo no diretorio: %s, tipo: %d, ponteiro: %d, valido: %d, tamanho: %d\n",dirRecord.name,dirRecord.fileType,dirRecord.dataPointer,dirRecord.isValid,dirRecord.fileSize);
+	//printf("String no bloco: %s\n",&blockBuffer[block1DataSize]);
+	//Arquivo no bloco:
+	
+	readBlock(1,blockBuffer);
+	dirData =*(DirData*)(blockBuffer+sizeof(unsigned int));
+	block1DataSize = sizeof(unsigned int)+sizeof(DirData);
+	printf("String no bloco: %s\n",&blockBuffer[block1DataSize]);
 
-	printf("\n\n==========================================================\n");
 
-	int i = 0;
-	for(i = 0; i<10; i++){
-		printf("%d", cu[i]);
-	}
-
+	
+	destroyBuffer(blockBuffer);
 	return 0;
 }
