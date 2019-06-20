@@ -1463,13 +1463,18 @@ int writeData(char *buffer, int bufferSize, int blockToWriteOn, int blockToWrite
 			if(nextBlockPointer==UINT_MAX){
 				nextBlockPointer= allocateBlock();
 				memcpy(blockBuffer,(unsigned char*)&nextBlockPointer,sizeof(unsigned int));
+
 			}
-			currentBlockToWriteOn=nextBlockPointer;
 		}
+		
 		memcpy(&blockBuffer[blockToWriteOffset],(unsigned char*)buffer,bytesToWriteInBlock);//botar if
+		#ifdef VERBOSE_DEBUG
+			printf("[writeData] Escrevendo No Bloco: %d \n",currentBlockToWriteOn);
+		#endif
 		if(writeBlock(currentBlockToWriteOn,blockBuffer)<0)
 			return -1;
 		blockToWriteOffset = sizeof(unsigned int);
+		currentBlockToWriteOn=nextBlockPointer;
 	}while(totalBytesToWrite>0);
 	destroyBuffer(blockBuffer);
 }
