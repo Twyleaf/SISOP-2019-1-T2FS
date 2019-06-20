@@ -1340,3 +1340,118 @@ int getDirectoryEntry(unsigned int directoryFirstBlockNumber, char* filename, Di
 	#endif
 	return -1;
 }
+
+int getOpenFileData(int handle,OpenFileData *openFileData){
+	if((handle<0)||(handle>10)){
+		return -1;
+	}
+	memcpy(openFileData,&open_files[handle],sizeof(OpenFileData));
+	return 1;
+}
+
+int getCurrentPointerPosition(unsigned int currentPointer,unsigned int firstBlockOfFile,BlockAndByteOffset *blockAndByteOffset){
+	/*O primeiro bloco de um arquivo tem um ponteiro para o próximo e a estrutura de informações do arquivo
+	* Apenas após estes dados que os dados de fato começam, então calculamos esse offset para poder
+	* calcular quantos bytes de dados cabem no primeiro bloco*/
+	int firstBlockDataOffset = sizeof(unsigned int)+sizeof(DirData);
+	int firstBlockDataRegionSize = blockSize - firstBlockDataOffset;
+	unsigned char* sectorBuffer = createSectorBuffer();
+	/*Quanto aos outros blocos, basta fazer o mesmo cálculo considerando apenas o ponteiro para o próximo
+	* bloco como offset*/
+	int otherBlocksDataOffset = sizeof(unsigned int);
+	int otherBlocksDataRegionSize = blockSize - otherBlocksDataOffset;
+	
+	//Ponteiro a ser usado na iteração de blocos
+	unsigned int nextBlockPointer;
+	int currentBlockDataSize=firstBlockDataRegionSize;//Tamanho da area de blocos do bloco sendo iterado
+	unsigned int currentPointerIterator=currentPointer;
+	int currentBlock=getFirstSectorOfBlock(firstBlockOfFile);
+	/*Queremos achar o bloco no qual o CurrentPointer estaria, junto com seu offset, então temos que iterar sobre os blocos
+	* para descobrirmos o número do bloco do currentPointer.
+	* O offset precisa ser descoberto também, subtraíndo um offset "total" (currentPointerIterator) até que sobre um offset que "caiba" no bloco sendo iterado.
+	* A iteração acaba quando esse offset conseguir caber em um bloco, retornando esse offset+offset de dados do bloco, mais o bloco em si.
+	*/
+	while(currentPointerIterator>currentBlockDataSize){
+		if(read_sector(currentBlock,sectorBuffer)!=0){
+			return -1;
+		}
+		nextBlockPointer = *(unsigned int*)(sectorBuffer);
+		if(nextBlockPointer==UINT_MAX){
+			return -1;//ERRO: Current pointer aponta para um local não referenciável
+		}
+		currentBlock=nextBlockPointer;
+		currentPointerIterator-=currentBlockDataSize;
+		currentBlockDataSize=otherBlocksDataRegionSize;
+	}
+	destroyBuffer(sectorBuffer);
+	BlockAndByteOffset offsetToCopy;//offset a ser usado com memcpy ao original
+	offsetToCopy.block = currentBlock;// Setamos o bloco do offset como sendo o bloco no qual 
+	if(currentBlockDataSize=firstBlockDataRegionSize){
+		offsetToCopy.byte = currentPointerIterator+firstBlockDataOffset;
+	}else{
+		offsetToCopy.byte = currentPointerIterator+otherBlocksDataOffset;
+	}
+	memcpy(blockAndByteOffset,&offsetToCopy,sizeof(offsetToCopy));//Efetua a escrita na struct passada por referência
+	return 1;
+
+}
+
+int getNewFileSize(unsigned int fileOriginalSize, unsigned int dataBeingWrittenSize, unsigned int currentPointer){
+	/*Calcula o quão longe o ponteiro atual está do fim do arquivo, já que escrita poderia ser no meio
+	 *Ajustar o tamanho do file na struct dele, sendo igual a TamanhoAnterior+(size- distanciaDoFinal).
+	 *O tamanho novo não pode ser menor, se for retornar tamanho original
+	*/
+	int bytesBetweenPointerAndEnd= (signed)fileOriginalSize - (signed)currentPointer;
+	if(bytesBetweenPointerAndEnd<0){//ERRO: currentPointer aponta para fora do arquivo
+		return -1;
+	}
+	if(bytesBetweenPointerAndEnd >= dataBeingWrittenSize){
+		return fileOriginalSize;
+	}else{	
+		int fileNewSize = fileOriginalSize+(dataBeingWrittenSize-bytesBetweenPointerAndEnd);
+		return fileNewSize;
+	}
+}
+
+int writeData(char *buffer, int bufferSize, int blockToWriteOn, int blockToWriteOffset){
+	/*efetua a escrita, iterando sobre os blocos, alocando blocos novos (se o proximo ponteiro for válido, usar esse ponteiro)
+	* Escreve a primeira leva de dados no bloco dado, depois, se sobrar dados, iniciar iteração
+	* Enquanto os dados do buffer não acabarem, escrever no bloco com offset definido, achar ou alocar próximo bloco, ir até ele
+	*/
+	unsigned char* blockBuffer = createBlockBuffer();
+	int totalBytesToWrite =bufferSize;
+	int bytesToWriteInBlock;
+	int currentBlockToWriteOn=blockToWriteOn;
+	unsigned int nextBlockPointer;
+	//unsigned int allocatedBlockNumber;
+	do{
+		readBlock(currentBlockToWriteOn,blockBuffer);
+		nextBlockPointer = *(unsigned int*)(blockBuffer);
+		if((blockSize-blockToWriteOffset)<bufferSize){
+			bytesToWriteInBlock =blockSize-blockToWriteOffset;
+		}else{
+			bytesToWriteInBlock =bufferSize;
+		}
+		totalBytesToWrite-=bytesToWriteInBlock;
+		if(totalBytesToWrite>0){
+			if(nextBlockPointer==UINT_MAX){
+				nextBlockPointer= allocateBlock();
+				memcpy(&blockBuffer,(unsigned char*)&nextBlockPointer,sizeof(unsigned int));
+			}
+			currentBlockToWriteOn=nextBlockPointer;
+		}
+		memcpy(&blockBuffer[blockToWriteOffset],(unsigned char*)buffer,bytesToWriteInBlock);//botar if
+		if(writeBlock(currentBlockToWriteOn,blockBuffer)<0)
+			return -1;
+		blockToWriteOffset = sizeof(unsigned int);
+	}while(totalBytesToWrite>0);
+	destroyBuffer(blockBuffer);
+}
+
+int writeCurrentFileData(int handle,OpenFileData openFileData){
+	if((handle<0)||(handle>10)){
+		return -1;
+	}
+	memcpy(&open_files[handle],&openFileData,sizeof(OpenFileData));
+	return 1;
+}

@@ -227,7 +227,44 @@ Função:	Função usada para realizar a escrita de uma certa quantidade
 		de bytes (size) de  um arquivo.
 -----------------------------------------------------------------------------*/
 int write2 (FILE2 handle, char *buffer, int size) {
-	return -1;
+	//Começa pegando os dados do diretório aberto a partir do handle
+	OpenFileData openFileData;
+	if(getOpenFileData(handle,&openFileData)<0){
+		return -1;
+	}
+	unsigned int firstBlockOfFile = openFileData.fileRecord.dataPointer;
+	unsigned int currentPointer = openFileData.pointerToCurrentByte;
+	//
+	//Acha a posição a partir da qual a escrita deve começar
+	BlockAndByteOffset blockAndByteOffset;
+	if(getCurrentPointerPosition(currentPointer,firstBlockOfFile,&blockAndByteOffset)<0){
+		return -1;
+	}
+	//	
+	
+	//Calcular o quão longe o ponteiro atual está do fim do arquivo, já que escrita poderia ser no meio
+	//Ajustar o tamanho do file na struct dele, sendo igual a TamanhoAnterior+(size- distanciaDoFinal).
+	//	O tamanho novo não pode ser menor
+	int newSize;
+	newSize = getNewFileSize(openFileData.fileRecord.fileSize,size,currentPointer);
+	if(newSize<0){
+		return -1;
+	}
+	
+	//efetuar de fato a escrita, iterando sobre os blocos, alocando blocos novos (se o proximo ponteiro for válido, usar esse ponteiro)
+	if(writeData(buffer,size,blockAndByteOffset.block,blockAndByteOffset.byte)<0){
+		return -1;
+	}
+	
+	//atualizar a estrutura de dados do arquivo aberto
+	//currentPointer e size
+	openFileData.pointerToCurrentByte=currentPointer+size;
+	openFileData.fileRecord.fileSize=newSize;
+	if(writeCurrentFileData(handle,openFileData)<0){
+		return -1;
+	}
+	
+	return 1;
 }
 
 /*-----------------------------------------------------------------------------

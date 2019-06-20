@@ -17,9 +17,9 @@ SRC_DIR=./src
 all:
 
 testeObj:
-	$(CC) -c teste/testeRmdir.c src/t2fs.c src/support.c src/bitmap.c -Wall -w
+	$(CC) -c teste/testeWrite.c src/t2fs.c src/support.c src/bitmap.c -Wall -w
 testeExe:
-	$(CC) testeRmdir.o t2fs.o support.o bitmap.o lib/apidisk.o -o testes -lm
+	$(CC) testeWrite.o t2fs.o support.o bitmap.o lib/apidisk.o -o testes -lm
 
 clean:
 	rm -rf $(LIB_DIR)/*.a $(BIN_DIR)/*.o $(SRC_DIR)/*~ $(INC_DIR)/*~ *~

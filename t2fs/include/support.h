@@ -36,6 +36,11 @@ typedef struct Open_File_Data{
 	int pointerToCurrentByte;
 } OpenFileData;
 
+typedef struct Block_And_Byte_Offset{
+	unsigned int block;
+	unsigned int byte;
+} BlockAndByteOffset;
+
 OpenFileData open_files[10]; //apenas 10 arquivos podem estar abertos simultaneamente
 
 extern int T2FSInitiated;
@@ -65,6 +70,8 @@ int getFileBlock(char *filename);
 int goToFileFromParentDir();
 
 int readBlock(int blockNumber,unsigned char* data);
+
+int writeBlock(int blockNumber, unsigned char* data);
 
 int getFileNameAndPath(char *pathname, char *path, char *name);
 
@@ -104,5 +111,17 @@ int fileExistsInDir(char* fileName, int parentDirFirstBlock);
 int isPathnameAlphanumeric(char* pathname,int maxPathSize);
 
 int getFileType(int firstBlockNumber);
+
+//=========================================FUNÇÕES PARA WRITE=======================================
+
+int getOpenFileData(int handle,OpenFileData *openFileData);
+
+int getCurrentPointerPosition(unsigned int currentPointer,unsigned int firstBlockOfFile,BlockAndByteOffset *blockAndByteOffset);
+
+int getNewFileSize(unsigned int fileOriginalSize, unsigned int dataBeingWrittenSize, unsigned int currentPointer);
+
+int writeData(char *buffer, int bufferSize, int blockToWriteOn, int blockToWriteOffset);
+
+int writeCurrentFileData(int handle,OpenFileData openFileData);
 
 #endif
