@@ -318,9 +318,6 @@ int read2 (FILE2 handle, char *buffer, int size) {
 
 	int firstBlockToRead = BnBOffset.block;
 	int firstBlockOffset = BnBOffset.byte;
-	
-	printf("POINTER TO CURRENT BYTE: %d", thisFile.pointerToCurrentByte);
-	printf("\nFIRST BLOCK TO READ: %d\n", firstBlockToRead);
 
 	int otherBlocksOffset = sizeof(unsigned int);
 
@@ -342,6 +339,9 @@ int read2 (FILE2 handle, char *buffer, int size) {
 
 	if(remainingBytesInFirstBlock >= remainingBytesToRead){
 		/*Vamos ler apenas bytes do primeiro bloco, sem acessar os blocos seguintes */
+		#ifdef VERBOSE_DEBUG
+			printf("[read2] Vai ler alguns bytes do primeiro bloco\n");
+		#endif
 		lastBlockCutoff = firstBlockOffset + remainingBytesToRead;
 		if(readFromBlockWithOffsetAndCutoff(firstBlockToRead, firstBlockOffset, lastBlockCutoff, buffer) != 0){
 			#ifdef VERBOSE_DEBUG

@@ -1686,13 +1686,18 @@ int readFromBlockWithOffsetAndCutoff(unsigned int blockNumber, unsigned int offs
 		return -1;
 	}
 
-	if(readBlock(blockBuffer, blockNumber)!=0){
+	if(readBlock(blockNumber, blockBuffer)!=0){
 		#ifdef VERBOSE_DEBUG
 			printf("[readFromBlockWithOffsetAndCutoff] Erro ao tentar ler o bloco %d\n", blockNumber);
 		#endif
 		destroyBuffer(blockBuffer);
 		return -1;
 	}
+	#ifdef VERBOSE_DEBUG
+		printf("[readFromBlockWithOffsetAndCutoff] BYTES TO READ: %d\n", bytesToRead);
+		printf("[readFromBlockWithOffsetAndCutoff] OFFSET: %d\n", offset);
+		printf("[readFromBlockWithOffsetAndCutoff] CUTOFF: %d\n", cutoff);
+	#endif
 
 	memcpy(buffer, &blockBuffer[offset], bytesToRead);
 
