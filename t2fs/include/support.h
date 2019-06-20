@@ -38,7 +38,7 @@ typedef struct Open_File_Data{
 
 typedef struct Open_Dir_Data{
 	bool isValid;
-	Dir_Data fileData;
+	DirData fileData;
 } OpenDirData;
 
 
