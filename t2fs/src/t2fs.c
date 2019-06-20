@@ -272,7 +272,18 @@ FILE2 open2 (char *filename) {
 Função:	Função usada para fechar um arquivo.
 -----------------------------------------------------------------------------*/
 int close2 (FILE2 handle) {
+	/*
+	if(T2FSInitiated==0){
+		initT2FS();
+	}
+	
+	if((0 <= handle) && (handle <= 9)){
+		open_files[handle].registro.file_type = INVALID_PTR;
+		return 0;
+	}
+	
 	return -1;
+	*/
 }
 
 /*-----------------------------------------------------------------------------
@@ -587,7 +598,22 @@ DIR2 opendir2 (char *pathname) {
 Função:	Função usada para ler as entradas de um diretório.
 -----------------------------------------------------------------------------*/
 int readdir2 (DIR2 handle, DIRENT2 *dentry) {
+	/*
+	if(T2FSInitiated==0){
+		initT2FS();
+	}
+	
+	// Check if the handle is valid
+	if ((handle >= 0) && (handle < 9))
+	{
+	  strcpy(dentry->name, open_files[handle].registro.name);
+	  dentry->fileType = open_files[handle].registro.file_type;
+	  dentry->fileSize = open_files[handle].registro.file_size;
+	  return 0;
+	}
+
 	return -1;
+	*/
 }
 
 /*-----------------------------------------------------------------------------
