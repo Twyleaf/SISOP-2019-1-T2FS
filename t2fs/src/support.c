@@ -1431,20 +1431,26 @@ int writeData(char *buffer, int bufferSize, int blockToWriteOn, int blockToWrite
 	int bytesToWriteInBlock;
 	int currentBlockToWriteOn=blockToWriteOn;
 	unsigned int nextBlockPointer;
+	int blockDataSize;
 	//unsigned int allocatedBlockNumber;
 	do{
 		readBlock(currentBlockToWriteOn,blockBuffer);
 		nextBlockPointer = *(unsigned int*)(blockBuffer);
-		if((blockSize-blockToWriteOffset)<bufferSize){
-			bytesToWriteInBlock =blockSize-blockToWriteOffset;
+		blockDataSize=blockSize-blockToWriteOffset;
+		if(blockDataSize < totalBytesToWrite){//bytes para escrever no bloco deve ser o mínimo entre o
+			bytesToWriteInBlock =blockDataSize;// tamanho do espaço de dados do bloco e o tamanho que precisa escrever do buffer
 		}else{
-			bytesToWriteInBlock =bufferSize;
+			bytesToWriteInBlock =totalBytesToWrite;
 		}
+		#ifdef VERBOSE_DEBUG
+			printf("[writeData] Bytes para escrever no bloco: %d\n",bytesToWriteInBlock);
+		#endif
+		//exit(-1); 
 		totalBytesToWrite-=bytesToWriteInBlock;
 		if(totalBytesToWrite>0){
 			if(nextBlockPointer==UINT_MAX){
 				nextBlockPointer= allocateBlock();
-				memcpy(&blockBuffer,(unsigned char*)&nextBlockPointer,sizeof(unsigned int));
+				memcpy(blockBuffer,(unsigned char*)&nextBlockPointer,sizeof(unsigned int));
 			}
 			currentBlockToWriteOn=nextBlockPointer;
 		}
