@@ -806,9 +806,16 @@ int readdir2 (DIR2 handle, DIRENT2 *dentry) {
 Função:	Função usada para fechar um diretório.
 -----------------------------------------------------------------------------*/
 int closedir2 (DIR2 handle) {
+	
 	if(T2FSInitiated==0){
 		initT2FS();
 	}
+	
+	if((0 <= handle) && (handle <= 9)){
+		open_directories[handle].isValid = false;
+		return 0;
+	}
+	
 	return -1;
 }
 
