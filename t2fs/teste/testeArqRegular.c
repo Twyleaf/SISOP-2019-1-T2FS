@@ -20,7 +20,7 @@ int main(){
 	dirData =*(DirData*)(blockBuffer+sizeof(unsigned int));
 	int block1DataSize = sizeof(unsigned int)+sizeof(DirData);
 	DirRecord dirRecord;
-	memcpy(&dirRecord,&blockBuffer[44],sizeof(DirRecord));
+	memcpy(&dirRecord,&blockBuffer[block1DataSize],sizeof(DirRecord));
 	
 	printf("Nome do arquivo no diretorio: %s, tipo: %d, ponteiro: %d, valido: %d\n",dirRecord.name,dirRecord.fileType,dirRecord.dataPointer,dirRecord.isValid);
 

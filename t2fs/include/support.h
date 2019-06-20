@@ -34,6 +34,7 @@ typedef struct Open_File_Data{
 	bool isValid;                       /*Para saber se este arquivo pode ser sobrescrito quando um novo for aberto */
     DirRecord fileRecord;               /*Cópia da entrada de diretório correspondente a este arquivo*/
 	int pointerToCurrentByte;
+	int parentDirBlock;					/*Bloco do diretório pai do arquivo*/
 } OpenFileData;
 
 typedef struct Open_Dir_Data{
@@ -130,5 +131,7 @@ int getNewFileSize(unsigned int fileOriginalSize, unsigned int dataBeingWrittenS
 int writeData(char *buffer, int bufferSize, int blockToWriteOn, int blockToWriteOffset);
 
 int writeCurrentFileData(int handle,OpenFileData openFileData);
+
+int SetSizeOfFileInDir(unsigned int directoryFirstBlockNumber, char* filename, unsigned int newFileSize);
 
 #endif

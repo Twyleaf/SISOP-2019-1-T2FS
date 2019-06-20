@@ -245,6 +245,7 @@ FILE2 open2 (char *filename) {
 
 	newOpenFileData.isValid = true;
 	newOpenFileData.pointerToCurrentByte = 0;
+	newOpenFileData.parentDirBlock = directoryFirstBlockNumber;
 	memcpy(&newOpenFileData.fileRecord, dirRecordBuffer, sizeof(DirRecord));
 
 	/*Iteramos pelo array de arquivos abertos procurando um que seja inválido para sobrescrever
@@ -305,6 +306,9 @@ int write2 (FILE2 handle, char *buffer, int size) {
 	}
 	unsigned int firstBlockOfFile = openFileData.fileRecord.dataPointer;
 	unsigned int currentPointer = openFileData.pointerToCurrentByte;
+	#ifdef VERBOSE_DEBUG
+		printf("[write2]Bloco do arquivo a ser escrito: %d currentPointer: %d\n",firstBlockOfFile,currentPointer);
+	#endif
 	//
 	//Acha a posição a partir da qual a escrita deve começar
 	BlockAndByteOffset blockAndByteOffset;
@@ -312,6 +316,9 @@ int write2 (FILE2 handle, char *buffer, int size) {
 		return -1;
 	}
 	//	
+	#ifdef VERBOSE_DEBUG
+		printf("[write2]Bloco no ponto do arquivo a ser escrito: %d offset: %d\n",blockAndByteOffset.block,blockAndByteOffset.byte);
+	#endif
 	
 	//Calcular o quão longe o ponteiro atual está do fim do arquivo, já que escrita poderia ser no meio
 	//Ajustar o tamanho do file na struct dele, sendo igual a TamanhoAnterior+(size- distanciaDoFinal).
