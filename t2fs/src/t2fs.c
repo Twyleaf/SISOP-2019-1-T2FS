@@ -10,16 +10,17 @@
 #include "../include/apidisk.h"
 #include "../include/support.h"
 
-//=========================================NOVO=====================================
 #define VERBOSE_DEBUG
 //para desativar os prints de debug, basta comentar esta linha
-//=====================================================================================
 
 /*-----------------------------------------------------------------------------
 Função:	Informa a identificação dos desenvolvedores do T2FS.
 -----------------------------------------------------------------------------*/
 int identify2 (char *name, int size) {
-    	char components[] = "Amaury Teixeira Cassola 287704\nBruno Ramos Toresan 291332\nDavid Mees Knijnik 264489";
+	if(T2FSInitiated==0){
+		initT2FS();
+	}
+    char components[] = "Amaury Teixeira Cassola 287704\nBruno Ramos Toresan 291332\nDavid Mees Knijnik 264489";
 	if(size >= strlen(components)){
 		strncpy(name, components, strlen(components)+1);
 		return 0;
@@ -133,6 +134,9 @@ FILE2 create2 (char *filename) {
 Função:	Função usada para remover (apagar) um arquivo do disco. 
 -----------------------------------------------------------------------------*/
 int delete2 (char *filename) {
+	if(T2FSInitiated==0){
+		initT2FS();
+	}
 
 	#ifdef VERBOSE_DEBUG
 	printf("[delete2]Iniciando\n");
@@ -199,6 +203,9 @@ int delete2 (char *filename) {
 Função:	Função que abre um arquivo existente no disco.
 -----------------------------------------------------------------------------*/
 FILE2 open2 (char *filename) {
+	if(T2FSInitiated==0){
+		initT2FS();
+	}
 	/* Esta função carrega do disco a entrada de diretório correspondente ao arquivo, usa ela para popular uma struct OpenFileData
 	*	e a adiciona no array de arquivos abertos, retornando o índice do array no qual inseriu*/
 	
@@ -290,6 +297,12 @@ Função:	Função usada para realizar a leitura de uma certa quantidade
 		de bytes (size) de um arquivo.
 -----------------------------------------------------------------------------*/
 int read2 (FILE2 handle, char *buffer, int size) {
+	if(T2FSInitiated==0){
+		initT2FS();
+	}
+	#ifdef VERBOSE_DEBUG
+		printf("[read2] Iniciando \n");
+	#endif
 	/* Primeiramente, descobrimos a partir de qual &bloco[offset] devemos ler
 	*  Então, calculamos quantos blocos precisarão ser lidos, se mais de 1
 	*  Por fim, até qual byte do último bloco devemos ler
@@ -300,11 +313,14 @@ int read2 (FILE2 handle, char *buffer, int size) {
 
 	OpenFileData thisFile = open_files[handle];
 	BlockAndByteOffset BnBOffset;
-	getCurrentPointerPosition(thisFile.pointerToCurrentByte, thisFile.fileRecord.dataPointer, &BnBOffset);
+	printf("retorno getpointer %d\n", getCurrentPointerPosition(thisFile.pointerToCurrentByte, thisFile.fileRecord.dataPointer, &BnBOffset));
 
 	int firstBlockToRead = BnBOffset.block;
 	int firstBlockOffset = BnBOffset.byte;
 	
+	printf("POINTER TO CURRENT BYTE: %d", thisFile.pointerToCurrentByte);
+	printf("\nFIRST BLOCK TO READ: %d\n", firstBlockToRead);
+
 	int otherBlocksOffset = sizeof(unsigned int);
 
 	int remainingBytesInFirstBlock = blockSize - firstBlockOffset;//quantos bytes do primeiro bloco são legíveis (ou seja, se encontram após o offset)
@@ -328,7 +344,7 @@ int read2 (FILE2 handle, char *buffer, int size) {
 		lastBlockCutoff = firstBlockOffset + remainingBytesToRead;
 		if(readFromBlockWithOffsetAndCutoff(firstBlockToRead, firstBlockOffset, lastBlockCutoff, buffer) != 0){
 			#ifdef VERBOSE_DEBUG
-				printf("[read2] Erro ao tentar ler o bloco %d\n", firstBlockToRead);
+				printf("[read2] Erro ao tentar ler o primeiro bloco %d\n", firstBlockToRead);
 			#endif
 			return -1;
 		}
@@ -407,6 +423,9 @@ Função:	Função usada para realizar a escrita de uma certa quantidade
 		de bytes (size) de  um arquivo.
 -----------------------------------------------------------------------------*/
 int write2 (FILE2 handle, char *buffer, int size) {
+	if(T2FSInitiated==0){
+		initT2FS();
+	}
 	//Começa pegando os dados do diretório aberto a partir do handle
 	OpenFileData openFileData;
 	if(getOpenFileData(handle,&openFileData)<0){
@@ -453,6 +472,9 @@ Função:	Função usada para truncar um arquivo. Remove do arquivo
 		(current pointer), inclusive, até o seu final.
 -----------------------------------------------------------------------------*/
 int truncate2 (FILE2 handle) {
+	if(T2FSInitiated==0){
+		initT2FS();
+	}
 	return -1;
 }
 
@@ -460,6 +482,9 @@ int truncate2 (FILE2 handle) {
 Função:	Altera o contador de posição (current pointer) do arquivo.
 -----------------------------------------------------------------------------*/
 int seek2 (FILE2 handle, DWORD offset) {
+	if(T2FSInitiated==0){
+		initT2FS();
+	}
 	return -1;
 }
 
@@ -534,6 +559,9 @@ int mkdir2 (char *pathname) {
 Função:	Função usada para remover (apagar) um diretório do disco.
 -----------------------------------------------------------------------------*/
 int rmdir2 (char *pathname) {
+	if(T2FSInitiated==0){
+		initT2FS();
+	}
 	/*
 	*	Remover um diretório significa remover do disco todos os seus arquivos e subdiretórios e, então, o diretório em si.
 	*	Para cada arquivo é chamada a delete2 e para cada subdiretório é feita uma chamada
@@ -722,6 +750,9 @@ int rmdir2 (char *pathname) {
 Função:	Função usada para alterar o CP (current path)
 -----------------------------------------------------------------------------*/
 int chdir2 (char *pathname) {
+	if(T2FSInitiated==0){
+		initT2FS();
+	}
 	return -1;
 }
 
@@ -729,6 +760,9 @@ int chdir2 (char *pathname) {
 Função:	Função usada para obter o caminho do diretório corrente.
 -----------------------------------------------------------------------------*/
 int getcwd2 (char *pathname, int size) {
+	if(T2FSInitiated==0){
+		initT2FS();
+	}
 	return -1;
 }
 
@@ -736,6 +770,9 @@ int getcwd2 (char *pathname, int size) {
 Função:	Função que abre um diretório existente no disco.
 -----------------------------------------------------------------------------*/
 DIR2 opendir2 (char *pathname) {
+	if(T2FSInitiated==0){
+		initT2FS();
+	}
 	return -1;
 }
 
@@ -762,6 +799,9 @@ int readdir2 (DIR2 handle, DIRENT2 *dentry) {
 Função:	Função usada para fechar um diretório.
 -----------------------------------------------------------------------------*/
 int closedir2 (DIR2 handle) {
+	if(T2FSInitiated==0){
+		initT2FS();
+	}
 	return -1;
 }
 
@@ -771,6 +811,9 @@ Função:	Função usada para criar um caminho alternativo (softlink) com
 		arquivo ou diretório fornecido por filename.
 -----------------------------------------------------------------------------*/
 int ln2 (char *linkname, char *filename) {
+	if(T2FSInitiated==0){
+		initT2FS();
+	}
 	return -1;
 }
 

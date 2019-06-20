@@ -11,7 +11,7 @@ int main(){
 	printf("\nRetorno: %d\n",format2(2));
 	printf("%d\n",getFileBlock("/"));
 	printf("%d\n",getFileType(0));
-	printf("Teste mkdir: %d\n", mkdir2("/NomeArq"));
+	/*printf("Teste mkdir: %d\n", mkdir2("/NomeArq"));
 	unsigned char* blockBuffer = createBlockBuffer();
 	readBlock(0,blockBuffer);
 	DirData dirData;
@@ -25,6 +25,6 @@ int main(){
 	printf("Testando delete2\n");
 	printf("bloco do arquivo NomeArq: %d\n",getFileBlock("/NomeArq"));
 	printf("Retorno delete2: %d\n", delete2("/NomeArq"));
-	printf("bloco do arquivo NomeArq: %d\n\n",getFileBlock("/NomeArq"));
+	printf("bloco do arquivo NomeArq: %d\n\n",getFileBlock("/NomeArq"));*/
 	return 0;
 }
