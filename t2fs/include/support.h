@@ -36,12 +36,19 @@ typedef struct Open_File_Data{
 	int pointerToCurrentByte;
 } OpenFileData;
 
+typedef struct Open_Dir_Data{
+	bool isValid;
+	Dir_Data fileData;
+} OpenDirData;
+
+
 typedef struct Block_And_Byte_Offset{
 	unsigned int block;
 	unsigned int byte;
 } BlockAndByteOffset;
 
 OpenFileData open_files[10]; //apenas 10 arquivos podem estar abertos simultaneamente
+OpenDirData open_directories[255]; // não tem um limite de diretórios que possam estara abertos
 
 extern int T2FSInitiated;
 extern short diskVersion;
@@ -95,8 +102,6 @@ int getSectorsPerBlock(int blockSizeBytes);
 
 int getBytesForBitmap();
 
-//=========================================FUNÇÕES NOVAS=======================================
-
 unsigned char* createSectorBuffer();
 unsigned char* createBlockBuffer();
 unsigned char* createBitmapBuffer();
@@ -111,6 +116,8 @@ int fileExistsInDir(char* fileName, int parentDirFirstBlock);
 int isPathnameAlphanumeric(char* pathname,int maxPathSize);
 
 int getFileType(int firstBlockNumber);
+
+int getDirectoryEntry(unsigned int directoryFirstBlockNumber, char* filename, DirRecord* dirRecordBuffer);
 
 //=========================================FUNÇÕES PARA WRITE=======================================
 

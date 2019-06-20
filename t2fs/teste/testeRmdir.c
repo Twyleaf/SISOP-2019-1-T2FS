@@ -15,6 +15,12 @@ int main(){
     printf("mkdir: %d\n", mkdir2("/Dir1/Dir2"));
     printf("mkdir: %d\n", mkdir2("/Dir1/Dir2/Dir3"));
 
-    printf("rmdir: %d\n",rmdir2("/Dir1/Dir2"));
+	printf("open2 Dir1: %d\n",open2("/Dir1"));
+	printf("read2\n");
+	read2 (0, NULL, 0);
+	printf("\n==================================\n");
+    printf("open2 Dir2: %d\n",open2("/Dir1/Dir2"));
+	printf("read2\n");
+	read2 (1, NULL, 0);
 	return 0;
 }
