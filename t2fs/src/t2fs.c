@@ -606,7 +606,7 @@ int readdir2 (DIR2 handle, DIRENT2 *dentry) {
 	{
 		// Get the handle content and assign it to the entry reference
 		// Fills the dentry
-		strcpy(dentry->name, open_files[handle].fileRecord.name);
+		strcpy(dentry->name, open_files[handle].fileRecord.name, 32);
 		dentry->fileType = open_files[handle].fileRecord.fileType;
 		dentry->fileSize = open_files[handle].fileRecord.fileSize;
 		return 0;
