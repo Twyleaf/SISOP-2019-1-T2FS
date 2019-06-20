@@ -97,11 +97,10 @@ FILE2 create2 (char *filename) {
 	}
 
 	if(fileExistsInDir(name,parentDirBlock)==1){
-		printf("[create2] arquivo já exite em diretório\n");
+		printf("[create2] arquivo já existe em diretorio\n");
 		if(delete2(filename)<0){
 			return -1;
 		}
-		
 	}
 	int firstBlockNumber = allocateBlock();
 
@@ -119,6 +118,7 @@ FILE2 create2 (char *filename) {
 	newDirEntry.fileType = 0x01; // Tipo do arquivo: regular (0x01) 
 	newDirEntry.dataPointer = firstBlockNumber;
 	newDirEntry.isValid = true;
+	newDirEntry.fileSize = 0;
 	if(insertEntryInDir(parentDirBlock,newDirEntry)==-1){
 		return -1;
 	}
@@ -199,6 +199,11 @@ int delete2 (char *filename) {
 Função:	Função que abre um arquivo existente no disco.
 -----------------------------------------------------------------------------*/
 FILE2 open2 (char *filename) {
+	/* Esta função carrega do disco a entrada de diretório correspondente ao arquivo, usa ela para popular uma struct OpenFileData
+	*	e a adiciona no array de arquivos abertos, retornando o índice do array no qual inseriu*/
+	
+	OpenFileData newOpenFileData;	/*struct que será mantida no array global */
+	DirRecord* dirRecordBuffer = (DirRecord*)malloc(sizeof(DirRecord));		/*struct que será lida do disco */
 	return -1;
 }
 
@@ -354,7 +359,8 @@ int rmdir2 (char *pathname) {
 	DirRecord currentEntry;
 	int numEntriesInFirstBlock;
 	int currentEntryOffset;
-	char currentFilePath[MAX_FILE_NAME_SIZE];
+	char currentFilePath[MAX_FILE_NAME_SIZE*10];
+
 	/*Se o número total de entradas neste diretório for menor que o número de entradas que cabem em um bloco,
 	* significa que o número de entradas no primeiro bloco será o número total de entradas, visto que tem espaço sobrando
 	  Caso contrário, o número de entradas no primeiro bloco será necessariamente o máximo que cabe nele*/

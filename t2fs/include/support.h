@@ -13,7 +13,7 @@ typedef struct Dir_Record{
     bool isValid;                       /* NOVO bit de validade da entrada (indica se esta entrada pode se sobrscrita ou não)*/                     
     char    name[32]; 					/* Nome do arquivo*/
     unsigned char    fileType;			/* Tipo do arquivo: regular (0x01) ou diretório (0x02) */
-    //DWORD   fileSize;                 /* Numero de bytes do arquivo   */
+    unsigned int   fileSize;                 /* Numero de bytes do arquivo  */
 	unsigned int	dataPointer	;		/* Ponteiro para primeiro bloco de dados do arquivo */
 } DirRecord;
 
@@ -21,7 +21,7 @@ typedef struct Dir_Data{
     char    name[32]; 					/* Nome do arquivo*/
     unsigned char    fileType;			/* Tipo do arquivo: regular (0x01) ou diretório (0x02) */
 	unsigned int	entryCount;			/* Número de entradas no diretorio*/
-	//unsigned int	fileSize;	Necessário implementar suporte para readdir. Colocar em entrada de dir?
+	unsigned int	fileSize;	        /* Necessário implementar suporte para readdir. Colocar em entrada de dir?*/
 } DirData;
 
 typedef struct T2FS_Info{
@@ -30,19 +30,13 @@ typedef struct T2FS_Info{
 
 } T2FSInfo;
 
-typedef struct {
-    char file_name[32]; 
-    unsigned char file_type;                   
-    int file_size;                  
-    int first_block;
-    int number_of_blocks;
-} Register;
-
 typedef struct Open_File_Data{
-	//Register register;
-	int pointer_to_current_byte;
+	bool isValid;                       /*Para saber se este arquivo pode ser sobrescrito quando um novo for aberto */
+    DirRecord fileRecord;               /*Cópia da entrada de diretório correspondente a este arquivo*/
+	int pointerToCurrentByte;
 } OpenFileData;
 
+OpenFileData open_files[10]; //apenas 10 arquivos podem estar abertos simultaneamente
 
 extern int T2FSInitiated;
 extern short diskVersion;

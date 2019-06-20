@@ -852,14 +852,6 @@ int getBytesForBitmap(){
 }
 
 
-
-
-
-//===================FUNÇÕES NOVAS=========================================================================================================
-
-
-
-
 /*
 *	Dados o primeiro bloco de um diretório e um nome de arquivo, percorre o diretório procurando o arquivo.
 *	Quando encontrar, modifica o bit de validade de sua entrada, fazendo com que ela possa ser sobrescrita futuramente
@@ -1199,4 +1191,152 @@ int getFileType(int firstBlockNumber){
 	DirData dirDataToRead = *(DirData*)(sectorBuffer+blockPointerSize);
 	printf("[getFileType] Tipo do arquivo de bloco %d: %d\n",firstBlockNumber,dirDataToRead.fileType);
 	return dirDataToRead.fileType;
+}
+
+
+/*
+*	Dados o número do primeiro bloco do diretório, um nome de arquivo e um buffer para uma entrada de diretório,
+*	lê do disco a entrada correspondente e a escreve no buffer.
+*	Se o arquivo não existir nesse diretório, retorna -1
+*	Se executou com sucesso, retorna 0
+*/
+int getDirectoryEntry(unsigned int directoryFirstBlockNumber, char* filename, DirRecord* dirRecordBuffer){
+	
+	/*O primeiro bloco de um diretório tem um ponteiro para o próximo e a estrutura de informações do diretório
+	* Apenas após estes dados que as entradas de fato começam, então calculamos esse offset para poder
+	* calcular quantas entradas de diretório cabem no primeiro bloco*/
+	int firstBlockFirstEntryOffset = sizeof(unsigned int)+sizeof(DirData);
+	int firstBlockEntryRegionSize = blockSize - firstBlockFirstEntryOffset;
+	int maxEntryCountFirstBlock= floor(firstBlockEntryRegionSize/(float)sizeof(DirRecord));
+
+	/*Quanto aos outros blocos, basta fazer o mesmo cálculo considerando apenas o ponteiro para o próximo
+	* bloco como offset*/
+	int otherBlocksFirstEntryOffset = sizeof(unsigned int);
+	int otherBlocksEntryRegionSize = blockSize - otherBlocksFirstEntryOffset;
+	int maxEntryCountOtherBlocks = floor(otherBlocksEntryRegionSize/(float)sizeof(DirRecord));
+	
+	/*Lemos o primeiro bloco do diretório para recuperar as informações correspondentes a ele 
+	* e o ponteiro para o próximo bloco*/
+	unsigned char* blockBuffer = createBlockBuffer();
+	if(readBlock(directoryFirstBlockNumber,blockBuffer)!=0){
+		#ifdef VERBOSE_DEBUG
+			printf("[SetDirectoryEntryAsInvalid]Erro ao ler o primeiro bloco do arquivo de diretório\nBloco: %d\n",directoryFirstBlockNumber);
+		#endif
+		destroyBuffer(blockBuffer); //sempre que a função for retornar, temos que garantir que a área que alocamos para o buffer será liberada
+		return -1;
+	}
+
+	unsigned int nextBlockPointer = *(unsigned int*)blockBuffer;	//ponteiro para o próximo bloco, se tiver
+	DirData directoryInfo = *(DirData*)(&blockBuffer[blockPointerSize]);//struct contendo informações sobre o diretório
+	int numEntriesInDirectory = directoryInfo.entryCount;//número de entradas neste diretório
+	int directorySizeInBlocks = ceil((sizeof(DirData)+numEntriesInDirectory*sizeof(DirRecord))/blockSize);
+	
+	/*Iteramos pelas entradas no primeiro bloco procurando por uma entrada que tenha o nome do arquivo que procuramos*/
+	int currentEntryIndex = 0;
+	int entrySize = sizeof(DirRecord);
+	DirRecord currentEntry;
+	int numEntriesInFirstBlock;
+	int currentEntryOffset;
+	/*Se o número total de entradas neste diretório for menor que o número de entradas que cabem em um bloco,
+	* significa que o número de entradas no primeiro bloco será o número total de entradas, visto que tem espaço sobrando
+	  Caso contrário, o número de entradas no primeiro bloco será necessariamente o máximo que cabe nele*/
+	if(maxEntryCountFirstBlock > numEntriesInDirectory) numEntriesInFirstBlock = numEntriesInDirectory;
+	else numEntriesInFirstBlock = maxEntryCountFirstBlock;
+
+	for(currentEntryIndex = 0; currentEntryIndex < numEntriesInFirstBlock; currentEntryIndex++){
+		currentEntryOffset = firstBlockFirstEntryOffset+entrySize*currentEntryIndex;
+		currentEntry = *(DirRecord*)(&blockBuffer[currentEntryOffset]);
+		if(strcmp(filename,currentEntry.name)==0){
+			/*Encontramos a entrada que estávamos procurando, agora basta copiar ela para o buffer e retornar*/
+			memcpy(dirRecordBuffer, &currentEntry, sizeof(DirRecord));
+			
+			#ifdef VERBOSE_DEBUG
+					printf("[getDirectoryEntry]Encontrou a entrada do arquivo %s\n",filename);
+			#endif
+			destroyBuffer(blockBuffer);
+			return 0;
+		}
+	}
+
+	/*Se a função chegou aqui, significa que a entrada que estávamos procurando não está no primeiro bloco,
+	* então vamos procurar nos outros, mas primeiro temos que checar se este diretório tem outros blocos */
+	if(directorySizeInBlocks == 1){
+		/*Se o diretório não tem mais blocos, significa que não conseguimos encontrar o arquivo, o que é um erro */
+		#ifdef VERBOSE_DEBUG
+			printf("[getDirectoryEntry]Não foi possível encontrar a entrada\n");
+		#endif
+		destroyBuffer(blockBuffer);
+		return -1;
+	}
+
+	/*Se a função chegou aqui, significa que precisamos procurar nos outros blocos do diretório pela entrada */
+	//lembrando que nextBlockPointer já nos diz o número do segundo bloco deste diretório 
+	//(recuperamos esta informação lá no início da função)
+
+	/*Número de entradas do diretório sobre as quais ainda falta iterar,
+	* usamos esse valor para checar se tem espaço sobrando em algum bloco
+	* e para calcular quantas entradas tem um dado bloco*/
+	int entriesRemaining = numEntriesInDirectory - maxEntryCountFirstBlock;
+
+	/*Número de entradas em um dado bloco, usamos esse valor para iterar
+	* sobre as entradas de cada bloco */
+	int numEntriesInCurrentBlock; 
+
+	unsigned int currentBlockNumber = 1; //começa em 1 pois já analisamos o primeiro bloco
+	for(currentBlockNumber = 1; currentBlockNumber < directorySizeInBlocks; currentBlockNumber++){
+		if(readBlock(nextBlockPointer, blockBuffer) != 0){
+			#ifdef VERBOSE_DEBUG
+				printf("[insertEntryInDir] Erro ao tentar ler o bloco %d\n",nextBlockPointer);
+			#endif
+			destroyBuffer(blockBuffer);
+			return -1;
+		}
+
+		/*O primeiro passo é iterar pelas entradas de diretório que estão neste bloco
+		* procurando pela entrada que tem o nome do arquivo que procuramos*/
+
+		/*Primeiramente calculamos quantas entradas existem no bloco atual.
+		* Se o número de entradas sobre as quais falta iterar for menor que o máximo que este bloco
+		* suporta, então o número de entradas neste bloco é exatamente o número de entradas sobre as quais falta iterar
+		* Caso contrário, este bloco necessariamente terá o número máximo de entradas */
+		if(maxEntryCountOtherBlocks > entriesRemaining) numEntriesInCurrentBlock = entriesRemaining;
+		else numEntriesInCurrentBlock = maxEntryCountOtherBlocks;
+
+		/*Agora iteramos sobre todas as entradas deste bloco procurando uma inválida para sobrescrever*/
+		for(currentEntryIndex = 0; currentEntryIndex<numEntriesInCurrentBlock; currentEntryIndex++){
+			
+			currentEntryOffset = otherBlocksFirstEntryOffset+entrySize*currentEntryIndex;
+			
+			currentEntry = *(DirRecord*)(&blockBuffer[currentEntryOffset]);
+			if(strcmp(filename,currentEntry.name)==0){
+				/*Encontramos a entrada que estávamos procurando, agora basta copiar ela para o buffer e retornar*/
+				memcpy(dirRecordBuffer, &currentEntry, sizeof(DirRecord));
+				
+				#ifdef VERBOSE_DEBUG
+						printf("[getDirectoryEntry]Encontrou a entrada do arquivo %s\n",filename);
+				#endif
+				destroyBuffer(blockBuffer);
+				return 0;
+			}
+		}
+
+		/*Se a função chegou aqui, significa que não encontramos a entrada que procurávamos no bloco atual,
+		* então vamos pegar o número do próximo bloco e continuar iterando
+		* (ou sair do loop se estivermos no último) */
+
+		/*Se alcançarmos o último bloco, podemos só sair do loop*/
+		if(*(unsigned int*)blockBuffer == UINT_MAX) break;
+
+		/*Caso contrário, pegamos os dados necessários e seguimos iterando*/
+		entriesRemaining = entriesRemaining - maxEntryCountOtherBlocks; //o bloco atual necessariamente está cheio
+		nextBlockPointer = *(unsigned int*)blockBuffer;
+	}
+
+	/*Se a função chegou aqui, significa que ela leu o diretório inteiro e não encontrou a entrada que estava procurando.
+	* Sendo assim, encerramos a função e retornamos um código de erro */
+	destroyBuffer(blockBuffer);
+	#ifdef VERBOSE_DEBUG
+		printf("[getDirectoryEntry]Não foi possivel encontrar a entrada\n");
+	#endif
+	return -1;
 }
