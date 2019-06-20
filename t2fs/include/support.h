@@ -131,4 +131,8 @@ int writeData(char *buffer, int bufferSize, int blockToWriteOn, int blockToWrite
 
 int writeCurrentFileData(int handle,OpenFileData openFileData);
 
+int readFromBlockWithOffsetAndCutoff(unsigned int blockNumber, unsigned int offset, unsigned int cutoff, unsigned char* buffer);
+
+int getPointerToNextBlock(unsigned int blockNumber, unsigned int* buffer);
+
 #endif

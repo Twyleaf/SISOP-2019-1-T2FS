@@ -1460,3 +1460,56 @@ int writeCurrentFileData(int handle,OpenFileData openFileData){
 	memcpy(&open_files[handle],&openFileData,sizeof(OpenFileData));
 	return 1;
 }
+
+/*
+*	Dados um número de bloco, um offset, um cutoff e um buffer, copia o conteúdo do bloco inteiro a partir desse offset e até o cutoff (não incluindo)
+*	para o buffer
+*	Retorna 0 se executou com sucesso, -1 caso contrário
+*/
+int readFromBlockWithOffsetAndCutoff(unsigned int blockNumber, unsigned int offset, unsigned int cutoff, unsigned char* buffer){
+	unsigned char* blockBuffer = createBlockBuffer();
+	unsigned int bytesToRead = (blockSize - offset) - (blockSize - cutoff);
+	
+	if(offset < 0 || cutoff >= blockSize){
+		#ifdef VERBOSE_DEBUG
+			printf("[readFromBlockWithOffsetAndCutoff] Valor de offset (%d) ou cutoff (%d) invalido\n", offset, cutoff);
+		#endif
+		destroyBuffer(blockBuffer);
+		return -1;
+	}
+
+	if(readBlock(blockBuffer, blockNumber)!=0){
+		#ifdef VERBOSE_DEBUG
+			printf("[readFromBlockWithOffsetAndCutoff] Erro ao tentar ler o bloco %d\n", blockNumber);
+		#endif
+		destroyBuffer(blockBuffer);
+		return -1;
+	}
+
+	memcpy(buffer, &blockBuffer[offset], bytesToRead);
+
+	destroyBuffer(blockBuffer);
+	return 0;
+}
+
+/*
+*	Dados um número de bloco e um buffer, copia o ponteiro para o próximo bloco que está no início deste bloco para o buffer
+*	Retorna 0 se executou com sucesso, -1 caso contrário
+*/
+int getPointerToNextBlock(unsigned int blockNumber, unsigned int* buffer){
+	unsigned char* sectorBuffer = createSectorBuffer();
+	int firstSectorNumber = getFirstSectorOfBlock(blockNumber);
+
+	if(read_sector(firstSectorNumber, sectorBuffer)!=0){
+		#ifdef VERBOSE_DEBUG
+			printf("[getPointerToNextBlock] Erro ao tentar ler o setor %d\n", firstSectorNumber);
+		#endif
+		destroyBuffer(sectorBuffer);
+		return -1;
+	}
+
+	memcpy(buffer, sectorBuffer, sizeof(unsigned int));
+
+	destroyBuffer(sectorBuffer);
+	return 0;
+}

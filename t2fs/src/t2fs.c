@@ -290,6 +290,115 @@ Função:	Função usada para realizar a leitura de uma certa quantidade
 		de bytes (size) de um arquivo.
 -----------------------------------------------------------------------------*/
 int read2 (FILE2 handle, char *buffer, int size) {
+	/* Primeiramente, descobrimos a partir de qual &bloco[offset] devemos ler
+	*  Então, calculamos quantos blocos precisarão ser lidos, se mais de 1
+	*  Por fim, até qual byte do último bloco devemos ler
+	*  Se o número de bytes a serem lidos for maior que o tamanho do arquivo a partir do seu pointerToCurrentByte,
+	*  Lemos até o fim, colocamos o pointerToCurrentByte no último byte+1 e retornamos o número de bytes efetivamente lidos
+	*/
+	int bytesActuallyRead = 0;//número de bytes que foram lidos do arquivo
+
+	OpenFileData thisFile = open_files[handle];
+	BlockAndByteOffset BnBOffset;
+	getCurrentPointerPosition(thisFile.pointerToCurrentByte, thisFile.fileRecord.dataPointer, &BnBOffset);
+
+	int firstBlockToRead = BnBOffset.block;
+	int firstBlockOffset = BnBOffset.byte;
+	
+	int otherBlocksOffset = sizeof(unsigned int);
+
+	int remainingBytesInFirstBlock = blockSize - firstBlockOffset;//quantos bytes do primeiro bloco são legíveis (ou seja, se encontram após o offset)
+	int remainingBytesInOtherBlocks = blockSize - otherBlocksOffset;//todos os blocos depois do primeiro terão apenas os bytes do ponteiro para o próximo como bytes não legíveis
+
+	int remainingFileBytes = thisFile.fileRecord.fileSize - thisFile.pointerToCurrentByte; //quantos bytes o arquivo tem a partir do pointerToCurrentByte
+	int remainingBytesToRead;
+
+	if(size > remainingFileBytes){
+		remainingBytesToRead = remainingFileBytes;
+	} else {
+		remainingBytesToRead = size;
+	}
+
+	int lastBlockCutoff;//será calculado quando chegarmos ao último bloco
+	int otherBlocksCutoff = blockSize;
+
+
+	if(remainingBytesInFirstBlock >= remainingBytesToRead){
+		/*Vamos ler apenas bytes do primeiro bloco, sem acessar os blocos seguintes */
+		lastBlockCutoff = firstBlockOffset + remainingBytesToRead;
+		if(readFromBlockWithOffsetAndCutoff(firstBlockToRead, firstBlockOffset, lastBlockCutoff, buffer) != 0){
+			#ifdef VERBOSE_DEBUG
+				printf("[read2] Erro ao tentar ler o bloco %d\n", firstBlockToRead);
+			#endif
+			return -1;
+		}
+
+		bytesActuallyRead += remainingBytesToRead;
+		open_files[handle].pointerToCurrentByte += bytesActuallyRead;
+		return bytesActuallyRead;
+	} else{
+		/*Vamos ler bytes de vários blocos, não apenas do primeiro */
+
+		/*Começamos lendo o primeiro*/
+		if(readFromBlockWithOffsetAndCutoff(firstBlockToRead, firstBlockOffset, otherBlocksCutoff, buffer) != 0){
+			#ifdef VERBOSE_DEBUG
+				printf("[read2] Erro ao tentar ler o bloco %d\n", firstBlockToRead);
+			#endif
+			return -1;
+		}
+		bytesActuallyRead += remainingBytesInFirstBlock;
+		remainingBytesToRead -= bytesActuallyRead;
+
+		unsigned int currentBlockNumber;
+		if(getPointerToNextBlock(firstBlockToRead, &currentBlockNumber) != 0){ //pegamos o ponteiro para o próximo bloco
+			#ifdef VERBOSE_DEBUG
+				printf("[read2] Erro ao tentar ler o ponteiro do bloco %d\n", firstBlockToRead);
+			#endif
+			return -1;
+		}
+
+		while(remainingBytesToRead > 0){
+			if(remainingBytesInOtherBlocks >= remainingBytesToRead){
+				/*Este é o último bloco que leremos, então precisamos calcular seu cutoff*/
+				lastBlockCutoff = otherBlocksOffset + remainingBytesToRead;
+				if(readFromBlockWithOffsetAndCutoff(currentBlockNumber, otherBlocksOffset, lastBlockCutoff, &buffer[bytesActuallyRead]) != 0){
+					#ifdef VERBOSE_DEBUG
+						printf("[read2] Erro ao tentar ler o bloco %d\n", currentBlockNumber);
+					#endif
+					return -1;
+				}
+
+				bytesActuallyRead += (blockSize - otherBlocksOffset) - (blockSize - lastBlockCutoff);
+				remainingBytesToRead -= bytesActuallyRead;
+				open_files[handle].pointerToCurrentByte += bytesActuallyRead;
+				return bytesActuallyRead;
+
+			} else {
+				/*Este não é o último bloco que leremos, então leremos ele inteiro */
+				if(readFromBlockWithOffsetAndCutoff(currentBlockNumber, otherBlocksOffset, otherBlocksCutoff, &buffer[bytesActuallyRead]) != 0){
+					#ifdef VERBOSE_DEBUG
+						printf("[read2] Erro ao tentar ler o bloco %d\n", currentBlockNumber);
+					#endif
+					return -1;
+				}
+
+				bytesActuallyRead += (blockSize - otherBlocksOffset) - (blockSize - otherBlocksCutoff);
+				remainingBytesToRead -= bytesActuallyRead;
+
+				if(getPointerToNextBlock(currentBlockNumber, &currentBlockNumber) != 0){ //pegamos o ponteiro para o próximo bloco
+					#ifdef VERBOSE_DEBUG
+						printf("[read2] Erro ao tentar ler o ponteiro do bloco %d\n", firstBlockToRead);
+					#endif
+					return -1;
+				}
+			}
+		}
+	}
+
+	/*Se a função chegar aqui, houve um erro */
+	#ifdef VERBOSE_DEBUG
+		printf("[read2] ERRO\n");
+	#endif
 	return -1;
 }
 
