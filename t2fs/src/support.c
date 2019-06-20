@@ -84,6 +84,13 @@ int initT2FS(){
 	T2FSInitiated=1;
 	//blockSectionStart = sectorsForBitmap + firstSectorPartition1 + 1;
 	//blockSize=SECTOR_SIZE*sectorsPerBlock;
+
+	/*Inicialização do array de arquivos abertos */
+	int currentIndex = 0;
+	OpenFileData emptyFile;
+	emptyFile.isValid = false;
+	for(currentIndex = 0; currentIndex < 10; currentIndex++) open_files[currentIndex] = emptyFile;
+	
 	return 1;
 }
 
@@ -515,7 +522,6 @@ int insertEntryInDir(int directoryFirstBlockNumber,DirRecord newDirEntry){
 		#ifdef VERBOSE_DEBUG
 			printf("[insertEntryInDir] Entrada vai ser escrita no primeiro bloco, com offset %d\n",currentEntryOffset);
 		#endif
-
 		memcpy(&blockBuffer[currentEntryOffset], &newDirEntry, sizeof(DirRecord));
 		if(writeBlock(directoryFirstBlockNumber, blockBuffer) != 0){
 			#ifdef VERBOSE_DEBUG
@@ -904,7 +910,7 @@ int SetDirectoryEntryAsInvalid(unsigned int directoryFirstBlockNumber, char* fil
 	for(currentEntryIndex = 0; currentEntryIndex < numEntriesInFirstBlock; currentEntryIndex++){
 		currentEntryOffset = firstBlockFirstEntryOffset+entrySize*currentEntryIndex;
 		currentEntry = *(DirRecord*)(&blockBuffer[currentEntryOffset]);
-		if(strcmp(filename,currentEntry.name)==0){
+		if(strcmp(filename,currentEntry.name)==0 && currentEntry.isValid){
 			/*Encontramos a entrada que estávamos procurando, agora basta desligar seu bit de validade e invalidar seu ponteiro*/
 			currentEntry.isValid = false;
 			currentEntry.dataPointer = -1;
@@ -976,7 +982,7 @@ int SetDirectoryEntryAsInvalid(unsigned int directoryFirstBlockNumber, char* fil
 			currentEntryOffset = otherBlocksFirstEntryOffset+entrySize*currentEntryIndex;
 			
 			currentEntry = *(DirRecord*)(&blockBuffer[currentEntryOffset]);
-			if(strcmp(filename,currentEntry.name)==0){
+			if(strcmp(filename,currentEntry.name)==0 && currentEntry.isValid){
 				/*Encontramos a entrada que estávamos procurando, agora basta desligar seu bit de validade e invalidar seu ponteiro*/
 				currentEntry.isValid = false;
 				currentEntry.dataPointer = -1;
@@ -1246,10 +1252,9 @@ int getDirectoryEntry(unsigned int directoryFirstBlockNumber, char* filename, Di
 	for(currentEntryIndex = 0; currentEntryIndex < numEntriesInFirstBlock; currentEntryIndex++){
 		currentEntryOffset = firstBlockFirstEntryOffset+entrySize*currentEntryIndex;
 		currentEntry = *(DirRecord*)(&blockBuffer[currentEntryOffset]);
-		if(strcmp(filename,currentEntry.name)==0){
+		if(strcmp(filename,currentEntry.name)==0 && currentEntry.isValid){
 			/*Encontramos a entrada que estávamos procurando, agora basta copiar ela para o buffer e retornar*/
 			memcpy(dirRecordBuffer, &currentEntry, sizeof(DirRecord));
-			
 			#ifdef VERBOSE_DEBUG
 					printf("[getDirectoryEntry]Encontrou a entrada do arquivo %s\n",filename);
 			#endif
@@ -1308,7 +1313,7 @@ int getDirectoryEntry(unsigned int directoryFirstBlockNumber, char* filename, Di
 			currentEntryOffset = otherBlocksFirstEntryOffset+entrySize*currentEntryIndex;
 			
 			currentEntry = *(DirRecord*)(&blockBuffer[currentEntryOffset]);
-			if(strcmp(filename,currentEntry.name)==0){
+			if(strcmp(filename,currentEntry.name)==0 && currentEntry.isValid){
 				/*Encontramos a entrada que estávamos procurando, agora basta copiar ela para o buffer e retornar*/
 				memcpy(dirRecordBuffer, &currentEntry, sizeof(DirRecord));
 				

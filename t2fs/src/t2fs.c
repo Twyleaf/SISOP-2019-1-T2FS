@@ -159,7 +159,7 @@ int delete2 (char *filename) {
 	int directoryFirstBlockNumber = getFileBlock(path);
 	if(directoryFirstBlockNumber == -1){
 		#ifdef VERBOSE_DEBUG
-			printf("[delete2] Erro ao procurar o primeiro bloco do arquivo %s\n",filename);
+			printf("[delete2] Erro ao procurar o primeiro bloco do diretório %s\n",path);
 		#endif
 	}
 
@@ -202,8 +202,69 @@ FILE2 open2 (char *filename) {
 	/* Esta função carrega do disco a entrada de diretório correspondente ao arquivo, usa ela para popular uma struct OpenFileData
 	*	e a adiciona no array de arquivos abertos, retornando o índice do array no qual inseriu*/
 	
+	#ifdef VERBOSE_DEBUG
+	printf("[open2]Iniciando\n");
+	#endif
+
+	char path[MAX_FILE_NAME_SIZE+1];
+	char name[32];
 	OpenFileData newOpenFileData;	/*struct que será mantida no array global */
 	DirRecord* dirRecordBuffer = (DirRecord*)malloc(sizeof(DirRecord));		/*struct que será lida do disco */
+
+	/*Usamos esta função para conseguir o caminho até o arquivo */
+	if(getFileNameAndPath(filename, path, name) != 0){
+		#ifdef VERBOSE_DEBUG
+			printf("[open2] Erro ao separar nome e diretório do pathname %s\n",filename);
+		#endif
+		free(dirRecordBuffer);
+		return -1;
+	}
+		
+
+	#ifdef VERBOSE_DEBUG
+	printf("[open2]Chamando getFileBlock\n");
+	#endif
+
+	/*Usamos GetFileBlock para conseguir o primeiro bloco do diretório */
+	int directoryFirstBlockNumber = getFileBlock(path);
+	if(directoryFirstBlockNumber == -1){
+		#ifdef VERBOSE_DEBUG
+			printf("[open2] Erro ao procurar o primeiro bloco do diretório %s\n",path);
+		#endif
+		free(dirRecordBuffer);
+		return -1;
+	}
+
+	if(getDirectoryEntry(directoryFirstBlockNumber, name, dirRecordBuffer) != 0){
+		#ifdef VERBOSE_DEBUG
+			printf("[open2] Erro ao procurar o primeiro bloco do diretório %s\n",path);
+		#endif
+		free(dirRecordBuffer);
+		return -1;
+	}
+
+	newOpenFileData.isValid = true;
+	newOpenFileData.pointerToCurrentByte = 0;
+	memcpy(&newOpenFileData.fileRecord, dirRecordBuffer, sizeof(DirRecord));
+
+	/*Iteramos pelo array de arquivos abertos procurando um que seja inválido para sobrescrever
+	* Este array foi inicialiado com todos como inválidos */	
+	int currentIndex = 0;
+	for(currentIndex = 0; currentIndex < 10; currentIndex++){
+		if(!open_files[currentIndex].isValid){
+			open_files[currentIndex] = newOpenFileData;
+			#ifdef VERBOSE_DEBUG
+				printf("[open2] Arquivo aberto\n");
+			#endif
+			free(dirRecordBuffer);
+			return (FILE2)currentIndex;
+		}
+	}
+
+	#ifdef VERBOSE_DEBUG
+		printf("[open2] Erro: já existem 10 arquivos abertos\n");
+	#endif
+	free(dirRecordBuffer);
 	return -1;
 }
 
@@ -302,7 +363,9 @@ int mkdir2 (char *pathname) {
 	newDirEntry.fileType = 0x02; // Tipo do arquivo: diretório (0x02) 
 	newDirEntry.dataPointer = firstBlockNumber;
 	newDirEntry.isValid = true;
+	newDirEntry.fileSize = 0;
 	printf("[mkdir2]Nome do arquivo no diretório: %s, tipo: %d, ponteiro: %d\n",newDirEntry.name,newDirEntry.fileType,newDirEntry.dataPointer);
+	
 	if(insertEntryInDir(parentDirBlock,newDirEntry)==-1){
 		printf("[mkdir2]Erro ao inserir entrada em diretório\n");
 		return -1;

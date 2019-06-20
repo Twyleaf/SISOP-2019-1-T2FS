@@ -88,8 +88,6 @@ int getSectorsPerBlock(int blockSizeBytes);
 
 int getBytesForBitmap();
 
-//=========================================FUNÇÕES NOVAS=======================================
-
 unsigned char* createSectorBuffer();
 unsigned char* createBlockBuffer();
 unsigned char* createBitmapBuffer();
@@ -104,5 +102,7 @@ int fileExistsInDir(char* fileName, int parentDirFirstBlock);
 int isPathnameAlphanumeric(char* pathname,int maxPathSize);
 
 int getFileType(int firstBlockNumber);
+
+int getDirectoryEntry(unsigned int directoryFirstBlockNumber, char* filename, DirRecord* dirRecordBuffer);
 
 #endif
