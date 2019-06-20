@@ -291,9 +291,6 @@ Função:	Função usada para realizar a leitura de uma certa quantidade
 		de bytes (size) de um arquivo.
 -----------------------------------------------------------------------------*/
 int read2 (FILE2 handle, char *buffer, int size) {
-	printf("nome: %s\n", open_files[handle].fileRecord.name);
-	printf("datapointer: %d\n", open_files[handle].fileRecord.dataPointer);
-	printf("type: %d\n", open_files[handle].fileRecord.fileType);
 	return -1;
 }
 
