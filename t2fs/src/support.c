@@ -1361,6 +1361,9 @@ int getCurrentPointerPosition(unsigned int currentPointer,unsigned int firstBloc
 	int firstBlockDataOffset = sizeof(unsigned int)+sizeof(DirData);
 	int firstBlockDataRegionSize = blockSize - firstBlockDataOffset;
 	unsigned char* sectorBuffer = createSectorBuffer();
+
+	unsigned char* blockBuffer = createBlockBuffer();
+
 	/*Quanto aos outros blocos, basta fazer o mesmo cálculo considerando apenas o ponteiro para o próximo
 	* bloco como offset*/
 	int otherBlocksDataOffset = sizeof(unsigned int);
@@ -1380,18 +1383,27 @@ int getCurrentPointerPosition(unsigned int currentPointer,unsigned int firstBloc
 		#ifdef VERBOSE_DEBUG
 			printf("[getCurrentPointerPosition]CurrentPointer aponta para depois do bloco %d\n",currentBlock);
 		#endif
-		if(read_sector(currentBlock,sectorBuffer)!=0){
+		/*if(read_sector(currentBlock,sectorBuffer)!=0){
+			return -1;
+		}*/
+
+		if(readBlock(currentBlock, blockBuffer)!=0){
+			destroyBuffer(blockBuffer);
 			return -1;
 		}
-		nextBlockPointer = *(unsigned int*)(sectorBuffer);
+
+		nextBlockPointer = *(unsigned int*)(blockBuffer);
 		if(nextBlockPointer==UINT_MAX){
+			destroyBuffer(blockBuffer);
 			return -1;//ERRO: Current pointer aponta para um local não referenciável
 		}
 		currentBlock=nextBlockPointer;
 		currentPointerIterator-=currentBlockDataSize;
 		currentBlockDataSize=otherBlocksDataRegionSize;
 	}
-	destroyBuffer(sectorBuffer);
+	//destroyBuffer(sectorBuffer);
+	destroyBuffer(blockBuffer);
+
 	BlockAndByteOffset offsetToCopy;//offset a ser usado com memcpy ao original
 	offsetToCopy.block = currentBlock;// Setamos o bloco do offset como sendo o bloco no qual 
 	if(currentBlockDataSize=firstBlockDataRegionSize){
@@ -1400,7 +1412,7 @@ int getCurrentPointerPosition(unsigned int currentPointer,unsigned int firstBloc
 		offsetToCopy.byte = currentPointerIterator+otherBlocksDataOffset;
 	}
 	memcpy(blockAndByteOffset,&offsetToCopy,sizeof(offsetToCopy));//Efetua a escrita na struct passada por referência
-	return 1;
+	return 0;
 
 }
 
