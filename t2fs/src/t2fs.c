@@ -211,7 +211,18 @@ FILE2 open2 (char *filename) {
 Função:	Função usada para fechar um arquivo.
 -----------------------------------------------------------------------------*/
 int close2 (FILE2 handle) {
+	/*
+	if(T2FSInitiated==0){
+		initT2FS();
+	}
+	
+	if((0 <= handle) && (handle <= 9)){
+		open_files[handle].registro.file_type = INVALID_PTR;
+		return 0;
+	}
+	
 	return -1;
+	*/
 }
 
 /*-----------------------------------------------------------------------------
