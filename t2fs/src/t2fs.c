@@ -97,7 +97,8 @@ FILE2 create2 (char *filename) {
 	}
 
 	if(fileExistsInDir(name,parentDirBlock)==1){
-		if(delete2(filename)>0){
+		printf("[create2] arquivo já exite em diretório\n");
+		if(delete2(filename)<0){
 			return -1;
 		}
 		
@@ -117,6 +118,7 @@ FILE2 create2 (char *filename) {
 	strcpy(newDirEntry.name,name);
 	newDirEntry.fileType = 0x01; // Tipo do arquivo: regular (0x01) 
 	newDirEntry.dataPointer = firstBlockNumber;
+	newDirEntry.isValid = true;
 	if(insertEntryInDir(parentDirBlock,newDirEntry)==-1){
 		return -1;
 	}
@@ -294,6 +296,7 @@ int mkdir2 (char *pathname) {
 	strcpy(newDirEntry.name,name);
 	newDirEntry.fileType = 0x02; // Tipo do arquivo: diretório (0x02) 
 	newDirEntry.dataPointer = firstBlockNumber;
+	newDirEntry.isValid = true;
 	printf("[mkdir2]Nome do arquivo no diretório: %s, tipo: %d, ponteiro: %d\n",newDirEntry.name,newDirEntry.fileType,newDirEntry.dataPointer);
 	if(insertEntryInDir(parentDirBlock,newDirEntry)==-1){
 		printf("[mkdir2]Erro ao inserir entrada em diretório\n");

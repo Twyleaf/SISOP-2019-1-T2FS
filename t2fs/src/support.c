@@ -224,11 +224,13 @@ int goToFileFromParentDir(char* dirName,int parentDirBlockNumber){
 		}
 		while((dirEntryIndex<filesInDir)&&(dirOffset<=blockSize-dirEntrySize)){//Enquanto não ler todas as entradas e não exceder tamanho do bloco
 			record = *(DirRecord*)(blockBuffer+dirOffset);//Lê entrada
-			printf("[goToFileFromParentDir]Comparação de nome %s VS %s Na entrada com offset %d\n",dirName,record.name,dirOffset);
-			if(strcmp(dirName,record.name)==0){//Se nome é o sendo procurado, retorna número do bloco do arquivo.
-				return record.dataPointer;
+			if(record.isValid){//se entrada é válida
+				printf("[goToFileFromParentDir]Comparação de nome %s VS %s Na entrada com offset %d\n",dirName,record.name,dirOffset);
+				if(strcmp(dirName,record.name)==0){//Se nome é o sendo procurado, retorna número do bloco do arquivo.
+					return record.dataPointer;
+				}
+				dirEntryIndex++;//			Incrementa índice de número de entradas (lidas)
 			}
-			dirEntryIndex++;//			Incrementa índice de número de entradas (lidas)
 			if(dirEntryIndex>=filesInDir){//Encerra se não houver mais arquivos para ler
 				return -2;
 			}
