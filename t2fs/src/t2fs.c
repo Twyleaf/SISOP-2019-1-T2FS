@@ -57,6 +57,13 @@ int format2 (int sectors_per_block) {
 			return -1;
 		}
 	}
+	allocateRootDirBlock();
+	DirData rootDirData;
+	strcpy(rootDirData.name,"/\0");
+	rootDirData.fileType =0x02;
+	rootDirData.entryCount = 0;
+	if(writeDirData(rootDirBlockNumber, rootDirData)==-1)
+		return -1;
 	return 0;
 }
 
@@ -68,7 +75,7 @@ Função:	Função usada para criar um novo arquivo no disco e abrí-lo,
 		assumirá um tamanho de zero bytes.
 -----------------------------------------------------------------------------*/
 FILE2 create2 (char *filename) {
-	if(T2FSInitiated==0){
+		if(T2FSInitiated==0){
 		initT2FS();
 	}
 	char path[MAX_FILE_NAME_SIZE+1];
@@ -125,6 +132,10 @@ Função:	Função usada para remover (apagar) um arquivo do disco.
 -----------------------------------------------------------------------------*/
 int delete2 (char *filename) {
 
+	#ifdef VERBOSE_DEBUG
+	printf("[delete2]Iniciando\n");
+	#endif
+
 	/*"Apagar" um arquivo do disco significa:
 		1) Marcar a entrada de diretório correspondente como inválida,
 		2) Invalidar os ponteiros de seus blocos e
@@ -138,19 +149,22 @@ int delete2 (char *filename) {
 	if(getFileNameAndPath(filename, path, name) != 0)
 		return -1;
 
-
-	/*CONSIDERANDO QUE O CAMINHO RETORNADO POR getFileNameAndPath() TERMINA EM / */
-	/*Trocamos a barra no fim do caminho para o arquivo por um caractere de fim de string,
-	assim gerando o caminho para o diretório onde está o arquivo */
-	int pathIndex = 0;
-	while(path[pathIndex] != '\0'){
-		pathIndex++;
-	}
-	path[pathIndex-1] = '\0';
+	#ifdef VERBOSE_DEBUG
+	printf("[delete2]Chamando getFileBlock\n");
+	#endif
 
 	/*Usamos GetFileBlock para conseguir o primeiro bloco do diretório */
 	int directoryFirstBlockNumber = getFileBlock(path);
+	if(directoryFirstBlockNumber == -1){
+		#ifdef VERBOSE_DEBUG
+			printf("[delete2] Erro ao procurar o primeiro bloco do arquivo %s\n",filename);
+		#endif
+	}
 
+
+	#ifdef VERBOSE_DEBUG
+	printf("[delete2]Chamando SetDirectoryEntryAsInvalid\n");
+	#endif
 	/*Usamos  SetDirectoryEntryAsInvalid para invalidar a entrada de diretório correspondente a este arquivo*/
 	if(SetDirectoryEntryAsInvalid(directoryFirstBlockNumber, name) != 0){
 		#ifdef VERBOSE_DEBUG
@@ -159,6 +173,9 @@ int delete2 (char *filename) {
 		return -1;
 	}
 
+	#ifdef VERBOSE_DEBUG
+	printf("[delete2]Chamando setFileBlocksAsUnused\n");
+	#endif
 	/*Usamos a  setFileBlocksAsUnused para invalidar os ponteiros dos blocos deste arquivo e também
 	* configurar o bitmap para informar que estes blocos estão vazios*/
 	int fileFirstBlockNumber = getFileBlock(filename); //descobre o número do primeiro bloco do arquivo
@@ -168,7 +185,10 @@ int delete2 (char *filename) {
 		#endif
 		return -1;
 	}
-		
+	
+	#ifdef VERBOSE_DEBUG
+	printf("[delete2]Terminando\n");
+	#endif
 	/*Se a função chegou até aqui, o arquivo já está deletado e a função pode retornar */
 	return 0;
 }
@@ -250,13 +270,15 @@ int mkdir2 (char *pathname) {
 		printf("[mkdir2] Erro: arquivo em path não diretório\n");
 		return -1;
 	}
+	
 
 	if(fileExistsInDir(name,parentDirBlock)==1){
 		printf("[mkdir2] Arquivo de nome %s já existe no diretório\n",name);
 		return -1;
 	}
+
 	int firstBlockNumber = allocateBlock();
-	printf("[mkdir2] Bloco %d Alocando para o arquivo\n",firstBlockNumber);
+	printf("[mkdir2] Bloco %d Alocado para o arquivo\n",firstBlockNumber);
 
 	if(firstBlockNumber==-1){
 		printf("[mkdir2] Erro ao alocar um bloco\n");
@@ -277,6 +299,7 @@ int mkdir2 (char *pathname) {
 		printf("[mkdir2]Erro ao inserir entrada em diretório\n");
 		return -1;
 	}
+	
 	return writeDirData(firstBlockNumber,newDirData);
 }
 

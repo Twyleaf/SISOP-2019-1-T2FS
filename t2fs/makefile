@@ -17,7 +17,7 @@ SRC_DIR=./src
 all:
 
 testeObj:
-	$(CC) -c teste/testeFormatar.c src/t2fs.c src/support.c src/bitmap.c -Wall
+	$(CC) -c teste/testeFormatar.c src/t2fs.c src/support.c src/bitmap.c -Wall -w
 testeExe:
 	$(CC) testeFormatar.o t2fs.o support.o bitmap.o lib/apidisk.o -o testes -lm
 

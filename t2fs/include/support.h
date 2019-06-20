@@ -94,6 +94,10 @@ int getBytesForBitmap();
 
 //=========================================FUNÇÕES NOVAS=======================================
 
+unsigned char* createSectorBuffer();
+unsigned char* createBlockBuffer();
+unsigned char* createBitmapBuffer();
+void destroyBuffer(unsigned char* buffer);
 
 int setFileBlocksAsUnused(int firstBlock);
 

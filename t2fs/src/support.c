@@ -113,7 +113,9 @@ int formatFSData(int sectorsPerBlock){
 	//printf("Setores usados para o bitmap %d\n",sectorsForBitmap);
 	for(currentSector=0;currentSector<sectorsForBitmap;currentSector++)
 	{
-		printf("[formatFSData]Setor %d sendo escrito\n",firstSectorPartition1+1+currentSector);
+		#ifdef VERBOSE_DEBUG
+			printf("[formatFSData]Setor %d sendo escrito\n",firstSectorPartition1+1+currentSector);
+		#endif
 		if(write_sector(firstSectorPartition1+1+currentSector,sectorBuffer)!=0){//Escrever os bits do bitmap.
 			return -1;
 			//printf("Erro ao escrever o bitmap");
@@ -155,7 +157,9 @@ int getFileBlock(char *filename){
 	char fileCurrentChar = filename[0];
 	char dirName[32];
 	if(fileCurrentChar!='/'){
+		#ifdef VERBOSE_DEBUG
 		printf("[getFileBlock] Erro, path não absoluto\n");
+		#endif
 		return -1;
 	}
 	int dirNameStart=1;
@@ -176,14 +180,20 @@ int getFileBlock(char *filename){
 			dirName[dirNameIndex]='\0';
 			
 			if(getFileType(fileBlockIndex)!=0x02){//Se o diretório anterior não era realmente um arquivo de diretório
+				#ifdef VERBOSE_DEBUG
 				printf("[getFileBlock] Erro: arquivo em path não diretório\n");
+				#endif
 				return -1;
 			}
 			fileBlockIndex = goToFileFromParentDir(dirName,fileBlockIndex);
 			
+			#ifdef VERBOSE_DEBUG
 			printf("[getFileBlock] Bloco do arquivo durante iteração: %d\n",fileBlockIndex);
+			#endif
 			if(fileBlockIndex<0){
+				#ifdef VERBOSE_DEBUG
 				printf("[getFileBlock] Erro, bloco do arquivo filho não achado\n");
+				#endif
 				return -1;
 			}
 			dirNameIndex=0;
@@ -204,7 +214,7 @@ int goToFileFromParentDir(char* dirName,int parentDirBlockNumber){
 	if(readBlock(blockToRead,blockBuffer)!=0){//Faz a leitura do primeiro bloco
 		return -1;
 	}	
-	DirData* dirData=(DirData*)(blockBuffer[blockPointerSize]);// Salva dados do diretório
+	DirData* dirData=(DirData*)(blockBuffer+blockPointerSize);// Salva dados do diretório
 	int filesInDir=dirData->entryCount;
 	do{//	Itera sobre todos os blocos do diretório
 		nextBlockPointer = *(unsigned int*)(blockBuffer);//Calcula ponteiro para próximo bloco
@@ -412,13 +422,17 @@ int updateDirectory(DirData directory, int dirFirstBlockNumber){
 *	Adiciona esta entrada ao diretório
 *	Retorna 0 se executou com sucesso, -1 caso contrário
 */
-int insertEntryInDir(int directoryFirstBlockNumber,DirRecord newDirEntry){//TO DO: INCREMENTAR COUNT DE DIRETORIOS
+int insertEntryInDir(int directoryFirstBlockNumber,DirRecord newDirEntry){
 	/*
 	*	Itera pelos blocos do diretório procurando alguma DirRecord com isValid = false
 	*	Se encontrar, apenas sobrescreve ela com newDirEntry
 	*	Se não encontrar, escreve newDirEntry logo após a última entrada do diretório, 
 	*	incrementa o contador de entradas e atualiza as informações do diretório em disco
 	*/
+
+	#ifdef VERBOSE_DEBUG
+		printf("[insertEntryInDir]Iniciando\n");
+	#endif
 
 	/*O primeiro bloco de um diretório tem um ponteiro para o próximo e a estrutura de informações do diretório
 	* Apenas após estes dados que as entradas de fato começam, então calculamos esse offset para poder
@@ -444,7 +458,7 @@ int insertEntryInDir(int directoryFirstBlockNumber,DirRecord newDirEntry){//TO D
 		return -1;
 	}
 	unsigned int nextBlockPointer = *(unsigned int*)blockBuffer;	//ponteiro para o próximo bloco, se tiver
-	DirData directoryInfo = *(DirData*)blockBuffer[blockPointerSize];//struct contendo informações sobre o diretório
+	DirData directoryInfo = *(DirData*)(&blockBuffer[blockPointerSize]);//struct contendo informações sobre o diretório
 	int numEntriesInDirectory = directoryInfo.entryCount;//número de entradas neste diretório
 	
 	int directorySizeInBlocks = ceil((sizeof(DirData)+numEntriesInDirectory*sizeof(DirRecord))/blockSize);
@@ -461,9 +475,13 @@ int insertEntryInDir(int directoryFirstBlockNumber,DirRecord newDirEntry){//TO D
 	if(maxEntryCountFirstBlock > numEntriesInDirectory) numEntriesInFirstBlock = numEntriesInDirectory;
 	else numEntriesInFirstBlock = maxEntryCountFirstBlock;
 
+	#ifdef VERBOSE_DEBUG
+		printf("[insertEntryInDir]Iterando sobre as entradas do primeiro bloco\n");
+	#endif
+
 	for(currentEntryIndex = 0; currentEntryIndex < numEntriesInFirstBlock; currentEntryIndex++){
 		currentEntryOffset = firstBlockFirstEntryOffset+entrySize*currentEntryIndex;
-		currentEntry = *(DirRecord*)blockBuffer[currentEntryOffset];
+		currentEntry = *(DirRecord*)(&blockBuffer[currentEntryOffset]);
 		if(!currentEntry.isValid){
 			/*Encontramos uma entrada cujo arquivo foi deletado, então podemos sobrescrever ela com a nova*/
 			memcpy(&blockBuffer[currentEntryOffset], &newDirEntry, sizeof(DirRecord));
@@ -491,7 +509,6 @@ int insertEntryInDir(int directoryFirstBlockNumber,DirRecord newDirEntry){//TO D
 	if(maxEntryCountFirstBlock >numEntriesInDirectory){
 		/*Tem espaço sobrando no primeiro bloco, então vamos escrever no fim dele e atualizar a
 		* contagem de entradas*/
-
 		currentEntryOffset = firstBlockFirstEntryOffset+entrySize*numEntriesInDirectory;
 		#ifdef VERBOSE_DEBUG
 			printf("[insertEntryInDir] Entrada vai ser escrita no primeiro bloco, com offset %d\n",currentEntryOffset);
@@ -529,6 +546,10 @@ int insertEntryInDir(int directoryFirstBlockNumber,DirRecord newDirEntry){//TO D
 		/*Se o diretório ocupar apenas um bloco, vamos alocar um bloco novo e escrever a entrada lá*/
 		unsigned int newBlockNumber = allocateBlock();
 		
+	#ifdef VERBOSE_DEBUG
+		printf("[insertEntryInDir]Novo bloco sera alocado para o diretorio\n");
+	#endif
+
 		if(newBlockNumber == -1){ /*Houve um erro na função de alocação*/
 			#ifdef VERBOSE_DEBUG
 				printf("[insertEntryInDir] Erro ao tentar alocar novo bloco\n");
@@ -601,8 +622,12 @@ int insertEntryInDir(int directoryFirstBlockNumber,DirRecord newDirEntry){//TO D
 	/*Número de entradas em um dado bloco, usamos esse valor para iterar
 	* sobre as entradas de cada bloco */
 	int numEntriesInCurrentBlock; 
-
 	unsigned int currentBlockNumber = 1; //começa em 1 pois já analisamos o primeiro bloco
+
+	#ifdef VERBOSE_DEBUG
+		printf("[insertEntryInDir]Iniciando a iterar sobre os outros blocos do diretorio\n");
+	#endif
+
 	for(currentBlockNumber = 1; currentBlockNumber < directorySizeInBlocks; currentBlockNumber++){
 		
 		if(readBlock(nextBlockPointer, blockBuffer) != 0){
@@ -628,7 +653,7 @@ int insertEntryInDir(int directoryFirstBlockNumber,DirRecord newDirEntry){//TO D
 			
 			currentEntryOffset = otherBlocksFirstEntryOffset+entrySize*currentEntryIndex;
 			
-			currentEntry = *(DirRecord*)blockBuffer[currentEntryOffset];
+			currentEntry = *(DirRecord*)(&blockBuffer[currentEntryOffset]);
 			if(!currentEntry.isValid){
 				/*Encontramos uma entrada cujo arquivo foi deletado, então podemos sobrescrever ela com a nova*/
 				memcpy(&blockBuffer[currentEntryOffset], &newDirEntry, sizeof(DirRecord));
@@ -698,6 +723,10 @@ int insertEntryInDir(int directoryFirstBlockNumber,DirRecord newDirEntry){//TO D
 	* então a única opção é alocar um novo bloco e escrever a nova entrada lá.
 	* Felizmente,  temos o número do último bloco em nextBlockPointer e o conteúdo dele em blockBuffer*/
 	int lastBlockNumber = nextBlockPointer;
+
+	#ifdef VERBOSE_DEBUG
+		printf("[insertEntryInDir]Um novo bloco sera alocado para a nova entrada\n");
+	#endif
 
 	/*Alocamos um novo bloco para o diretório*/
 	unsigned int newBlockNumber = allocateBlock();
@@ -785,7 +814,7 @@ int writeRecordInBlock(DirRecord newDirEntry, int blockToWriteEntry, int dirToIn
 		return -1;
 	printf("[writeRecordInBlock]Record do diretório de nome %s sendo escrito no bloco %d com offset %d\n",
 		newDirEntry.name,blockToWriteEntry,dirToInsertOffset);
-	memcpy(blockBuffer[dirToInsertOffset], (const unsigned char*)&newDirEntry, sizeof(newDirEntry));
+	memcpy(&blockBuffer[dirToInsertOffset], (const unsigned char*)&newDirEntry, sizeof(newDirEntry));
 	if(writeBlock(blockToWriteEntry, blockBuffer)!=0)
 		return -1;
 	return SUCCEEDED;
@@ -826,6 +855,9 @@ int getBytesForBitmap(){
 
 //===================FUNÇÕES NOVAS=========================================================================================================
 
+
+
+
 /*
 *	Dados o primeiro bloco de um diretório e um nome de arquivo, percorre o diretório procurando o arquivo.
 *	Quando encontrar, modifica o bit de validade de sua entrada, fazendo com que ela possa ser sobrescrita futuramente
@@ -859,7 +891,7 @@ int SetDirectoryEntryAsInvalid(unsigned int directoryFirstBlockNumber, char* fil
 	}
 
 	unsigned int nextBlockPointer = *(unsigned int*)blockBuffer;	//ponteiro para o próximo bloco, se tiver
-	DirData directoryInfo = *(DirData*)blockBuffer[blockPointerSize];//struct contendo informações sobre o diretório
+	DirData directoryInfo = *(DirData*)(&blockBuffer[blockPointerSize]);//struct contendo informações sobre o diretório
 	int numEntriesInDirectory = directoryInfo.entryCount;//número de entradas neste diretório
 	int directorySizeInBlocks = ceil((sizeof(DirData)+numEntriesInDirectory*sizeof(DirRecord))/blockSize);
 	
@@ -877,11 +909,11 @@ int SetDirectoryEntryAsInvalid(unsigned int directoryFirstBlockNumber, char* fil
 
 	for(currentEntryIndex = 0; currentEntryIndex < numEntriesInFirstBlock; currentEntryIndex++){
 		currentEntryOffset = firstBlockFirstEntryOffset+entrySize*currentEntryIndex;
-		currentEntry = *(DirRecord*)blockBuffer[currentEntryOffset];
-		if(!strcmp(filename,currentEntry.name)==0){
-			/*Encontramos a entrada que estávamos procurando, agora basta desligar seu bit de validade */
+		currentEntry = *(DirRecord*)(&blockBuffer[currentEntryOffset]);
+		if(strcmp(filename,currentEntry.name)==0){
+			/*Encontramos a entrada que estávamos procurando, agora basta desligar seu bit de validade e invalidar seu ponteiro*/
 			currentEntry.isValid = false;
-
+			currentEntry.dataPointer = -1;
 			/*Sobrescrevemos a entrada no buffer */
 			memcpy(&blockBuffer[currentEntryOffset], &currentEntry, sizeof(DirRecord));
 
@@ -949,11 +981,11 @@ int SetDirectoryEntryAsInvalid(unsigned int directoryFirstBlockNumber, char* fil
 			
 			currentEntryOffset = otherBlocksFirstEntryOffset+entrySize*currentEntryIndex;
 			
-			currentEntry = *(DirRecord*)blockBuffer[currentEntryOffset];
-			if(!strcmp(filename,currentEntry.name)==0){
-				/*Encontramos a entrada que estávamos procurando, agora basta desligar seu bit de validade */
+			currentEntry = *(DirRecord*)(&blockBuffer[currentEntryOffset]);
+			if(strcmp(filename,currentEntry.name)==0){
+				/*Encontramos a entrada que estávamos procurando, agora basta desligar seu bit de validade e invalidar seu ponteiro*/
 				currentEntry.isValid = false;
-
+				currentEntry.dataPointer = -1;
 				/*Sobrescrevemos a entrada no buffer */
 				memcpy(&blockBuffer[currentEntryOffset], &currentEntry, sizeof(DirRecord));
 
@@ -988,7 +1020,7 @@ int SetDirectoryEntryAsInvalid(unsigned int directoryFirstBlockNumber, char* fil
 	* Sendo assim, encerramos a função e retornamos um código de erro */
 	destroyBuffer(blockBuffer);
 	#ifdef VERBOSE_DEBUG
-		printf("[SetDirectoryEntryAsInvalid]Não foi possível encontrar a entrada\n");
+		printf("[SetDirectoryEntryAsInvalid]Não foi possivel encontrar a entrada\n");
 	#endif
 	return -1;
 
