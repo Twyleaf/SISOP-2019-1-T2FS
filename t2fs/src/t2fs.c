@@ -307,7 +307,187 @@ int mkdir2 (char *pathname) {
 Função:	Função usada para remover (apagar) um diretório do disco.
 -----------------------------------------------------------------------------*/
 int rmdir2 (char *pathname) {
-	return -1;
+	/*
+	*	Remover um diretório significa remover do disco todos os seus arquivos e subdiretórios e, então, o diretório em si.
+	*	Para cada arquivo é chamada a delete2 e para cada subdiretório é feita uma chamada
+	*	recursiva desta função, assim garantindo que toda a árvore que tem esse diretório como raiz
+	*	será removida do disco. Após isso, é chamada delete2 para apagar o diretório.
+	*/
+
+	int directoryFirstBlockNumber = getFileBlock(pathname);
+	
+	/*O primeiro bloco de um diretório tem um ponteiro para o próximo e a estrutura de informações do diretório
+	* Apenas após estes dados que as entradas de fato começam, então calculamos esse offset para poder
+	* calcular quantas entradas de diretório cabem no primeiro bloco*/
+	int firstBlockFirstEntryOffset = sizeof(unsigned int)+sizeof(DirData);
+	int firstBlockEntryRegionSize = blockSize - firstBlockFirstEntryOffset;
+	int maxEntryCountFirstBlock= floor(firstBlockEntryRegionSize/(float)sizeof(DirRecord));
+
+	/*Quanto aos outros blocos, basta fazer o mesmo cálculo considerando apenas o ponteiro para o próximo
+	* bloco como offset*/
+	int otherBlocksFirstEntryOffset = sizeof(unsigned int);
+	int otherBlocksEntryRegionSize = blockSize - otherBlocksFirstEntryOffset;
+	int maxEntryCountOtherBlocks = floor(otherBlocksEntryRegionSize/(float)sizeof(DirRecord));
+
+	/*Lemos o primeiro bloco do diretório para recuperar as informações correspondentes a ele 
+	* e o ponteiro para o próximo bloco*/
+	unsigned char* blockBuffer = createBlockBuffer();
+	if(readBlock(directoryFirstBlockNumber,blockBuffer)!=0){
+		#ifdef VERBOSE_DEBUG
+			printf("[rmdir2]Erro ao ler o primeiro bloco do arquivo de diretório\nBloco: %d\n",directoryFirstBlockNumber);
+		#endif
+		destroyBuffer(blockBuffer); //sempre que a função for retornar, temos que garantir que a área que alocamos para o buffer será liberada
+		return -1;
+	}
+	unsigned int nextBlockPointer = *(unsigned int*)blockBuffer;	//ponteiro para o próximo bloco, se tiver
+	DirData directoryInfo = *(DirData*)(&blockBuffer[blockPointerSize]);//struct contendo informações sobre o diretório
+	int numEntriesInDirectory = directoryInfo.entryCount;//número de entradas neste diretório
+	
+	int directorySizeInBlocks = ceil((sizeof(DirData)+numEntriesInDirectory*sizeof(DirRecord))/blockSize);
+
+	/*Iteramos pelas entradas no primeiro bloco deletando-as uma a uma*/
+	int currentEntryIndex = 0;
+	int entrySize = sizeof(DirRecord);
+	DirRecord currentEntry;
+	int numEntriesInFirstBlock;
+	int currentEntryOffset;
+	char currentFilePath[MAX_FILE_NAME_SIZE];
+	/*Se o número total de entradas neste diretório for menor que o número de entradas que cabem em um bloco,
+	* significa que o número de entradas no primeiro bloco será o número total de entradas, visto que tem espaço sobrando
+	  Caso contrário, o número de entradas no primeiro bloco será necessariamente o máximo que cabe nele*/
+	if(maxEntryCountFirstBlock > numEntriesInDirectory) numEntriesInFirstBlock = numEntriesInDirectory;
+	else numEntriesInFirstBlock = maxEntryCountFirstBlock;
+
+	#ifdef VERBOSE_DEBUG
+		printf("[rmdir2]Iterando sobre as entradas do primeiro bloco\n");
+	#endif
+
+	for(currentEntryIndex = 0; currentEntryIndex < numEntriesInFirstBlock; currentEntryIndex++){
+		currentEntryOffset = firstBlockFirstEntryOffset+entrySize*currentEntryIndex;
+		currentEntry = *(DirRecord*)(&blockBuffer[currentEntryOffset]);
+		/*Se a entrada for inválida, apenas ignoramos ela*/
+		if(currentEntry.isValid){
+			/*Primeiramente, definimos o pathname do arquivo da entrada atual
+			* Este nome será usado na chamada de delete2 ou rmdir que remove este arquivo */
+			strcpy(currentFilePath, pathname);
+			strcat(currentFilePath, "/");
+			strcat(currentFilePath, currentEntry.name);
+			if(currentEntry.fileType = FILE_TYPE_REGULAR){
+				if(delete2(currentFilePath) != 0){
+					#ifdef VERBOSE_DEBUG
+						printf("[rmdir2]Erro ao tentar apagar o arquivo %s\n", currentFilePath);
+					#endif
+					destroyBuffer(blockBuffer);
+					return -1;
+				}
+			} else if(currentEntry.fileType == FILE_TYPE_DIRECTORY){
+				if(rmdir2(currentFilePath) != 0){//chamada recursiva
+					#ifdef VERBOSE_DEBUG
+						printf("[rmdir2]Erro ao tentar apagar o diretorio %s\n", currentFilePath);
+					#endif
+					destroyBuffer(blockBuffer);
+					return -1;
+				}
+			}
+			memset(currentFilePath,0,strlen(currentFilePath)); //"limpamos" a string para evitar bugs
+		}
+	}
+
+	/*Agora checamos se o diretório tem mais blocos. Se tiver, vamos iterar sobre eles apagando tudo.
+	* Caso contrário, vamos direto chamar delete2 para este diretório*/
+	if(directorySizeInBlocks > 1){
+		//lembrando que nextBlockPointer já nos diz o número do segundo bloco deste diretório 
+		//(recuperamos esta informação lá no início da função)
+
+		/*Número de entradas do diretório sobre as quais ainda falta iterar,
+		* usamos esse valor para checar se tem espaço sobrando em algum bloco
+		* e para calcular quantas entradas tem um dado bloco*/
+		int entriesRemaining = numEntriesInDirectory - maxEntryCountFirstBlock;
+
+		/*Número de entradas em um dado bloco, usamos esse valor para iterar
+		* sobre as entradas de cada bloco */
+		int numEntriesInCurrentBlock; 
+		unsigned int currentBlockNumber = 1; //começa em 1 pois já analisamos o primeiro bloco
+
+		#ifdef VERBOSE_DEBUG
+			printf("[rmdir2]Iniciando a iterar sobre os outros blocos do diretorio\n");
+		#endif
+
+		for(currentBlockNumber = 1; currentBlockNumber < directorySizeInBlocks; currentBlockNumber++){
+			
+			if(readBlock(nextBlockPointer, blockBuffer) != 0){
+				#ifdef VERBOSE_DEBUG
+					printf("[rmdir2] Erro ao tentar ler o bloco %d\n",nextBlockPointer);
+				#endif
+				destroyBuffer(blockBuffer);
+				return -1;
+			}
+
+			/*O primeiro passo é iterar pelas entradas de diretório que estão neste bloco
+			* procurando por alguma inválida para sobrescrever*/
+
+			/*Primeiramente calculamos quantas entradas existem no bloco atual.
+			* Se o número de entradas sobre as quais falta iterar for menor que o máximo que este bloco
+			* suporta, então o número de entradas neste bloco é exatamente o número de entradas sobre as quais falta iterar
+			* Caso contrário, este bloco necessariamente terá o número máximo de entradas */
+			if(maxEntryCountOtherBlocks > entriesRemaining) numEntriesInCurrentBlock = entriesRemaining;
+			else numEntriesInCurrentBlock = maxEntryCountOtherBlocks;
+
+			/*Agora iteramos sobre todas as entradas deste bloco apagando cada arquivo*/
+			for(currentEntryIndex = 0; currentEntryIndex<numEntriesInCurrentBlock; currentEntryIndex++){
+				
+				currentEntryOffset = otherBlocksFirstEntryOffset+entrySize*currentEntryIndex;
+				
+				currentEntry = *(DirRecord*)(&blockBuffer[currentEntryOffset]);
+				if(currentEntry.isValid){
+					/*Primeiramente, definimos o pathname do arquivo da entrada atual
+					* Este nome será usado na chamada de delete2 ou rmdir que remove este arquivo */
+					strcpy(currentFilePath, pathname);
+					strcat(currentFilePath, "/");
+					strcat(currentFilePath, currentEntry.name);
+					if(currentEntry.fileType = FILE_TYPE_REGULAR){
+						if(delete2(currentFilePath) != 0){
+							#ifdef VERBOSE_DEBUG
+								printf("[rmdir2]Erro ao tentar apagar o arquivo %s\n", currentFilePath);
+							#endif
+							destroyBuffer(blockBuffer);
+							return -1;
+						}
+					} else if(currentEntry.fileType == FILE_TYPE_DIRECTORY){
+						if(rmdir2(currentFilePath) != 0){//chamada recursiva
+							#ifdef VERBOSE_DEBUG
+								printf("[rmdir2]Erro ao tentar apagar o diretorio %s\n", currentFilePath);
+							#endif
+							destroyBuffer(blockBuffer);
+							return -1;
+						}
+					}
+
+					memset(currentFilePath,0,strlen(currentFilePath)); //"limpamos" a string para evitar bugs
+				}
+			}
+
+			/*Pegamos o ponteiro para o próximo bloco, atualizamos o número de entradas faltando
+			*  e seguimos iterando (ou saímos do loop, se for o último bloco)*/
+
+			entriesRemaining = entriesRemaining - maxEntryCountOtherBlocks; //o bloco atual necessariamente está cheio
+			nextBlockPointer = *(unsigned int*)blockBuffer;
+		}
+	}
+
+	if(delete2(pathname) != 0){
+		#ifdef VERBOSE_DEBUG
+			printf("[rmdir2]Erro ao apagar este diretorio %s\n", pathname);
+		#endif
+		destroyBuffer(blockBuffer);
+		return -1;
+	}
+	
+	/*Se a função chegou até aqui, o diretório e todo seu conteúdo estão apagados,
+	* basta liberar o buffer e retornar */
+
+	destroyBuffer(blockBuffer);
+	return 0;
 }
 
 /*-----------------------------------------------------------------------------

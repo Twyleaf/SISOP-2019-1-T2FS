@@ -4,6 +4,8 @@
 #define __SUPPORTT2FS___
 
 #define SUCCEEDED 0
+#define FILE_TYPE_REGULAR 0x01
+#define FILE_TYPE_DIRECTORY 0x02
 
 #include <stdbool.h>
 
