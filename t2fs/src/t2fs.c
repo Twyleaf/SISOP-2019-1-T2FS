@@ -324,6 +324,11 @@ int read2 (FILE2 handle, char *buffer, int size) {
 	int remainingBytesInFirstBlock = blockSize - firstBlockOffset;//quantos bytes do primeiro bloco são legíveis (ou seja, se encontram após o offset)
 	int remainingBytesInOtherBlocks = blockSize - otherBlocksOffset;//todos os blocos depois do primeiro terão apenas os bytes do ponteiro para o próximo como bytes não legíveis
 
+	#ifdef VERBOSE_DEBUG
+			printf("[read2] thisFile.fileRecord.fileSize: %d\n", thisFile.fileRecord.fileSize);
+			printf("[read2] thisFile.pointerToCurrentByte: %d\n", thisFile.pointerToCurrentByte);
+	#endif
+
 	int remainingFileBytes = thisFile.fileRecord.fileSize - thisFile.pointerToCurrentByte; //quantos bytes o arquivo tem a partir do pointerToCurrentByte
 	int remainingBytesToRead;
 
@@ -332,6 +337,10 @@ int read2 (FILE2 handle, char *buffer, int size) {
 	} else {
 		remainingBytesToRead = size;
 	}
+
+	#ifdef VERBOSE_DEBUG
+			printf("[read2] remainingBytesToRead: %d\n", remainingBytesToRead);
+	#endif
 
 	int lastBlockCutoff;//será calculado quando chegarmos ao último bloco
 	int otherBlocksCutoff = blockSize;
@@ -492,7 +501,20 @@ int seek2 (FILE2 handle, DWORD offset) {
 	if(T2FSInitiated==0){
 		initT2FS();
 	}
-	return -1;
+
+	OpenFileData thisFile = open_files[handle];
+	int fileSize = thisFile.fileRecord.fileSize;
+	int fileCurrentPointer = thisFile.pointerToCurrentByte;
+	if(offset == -1 || offset > fileSize){
+		fileCurrentPointer = fileSize;
+	}
+	else if(offset < fileSize){
+		fileCurrentPointer = offset;
+	}
+
+	open_files[handle].pointerToCurrentByte = fileCurrentPointer;
+
+	return 0;
 }
 
 /*-----------------------------------------------------------------------------
