@@ -491,7 +491,37 @@ int truncate2 (FILE2 handle) {
 	if(T2FSInitiated==0){
 		initT2FS();
 	}
-	return -1;
+
+	OpenFileData thisFile = open_files[handle];
+	BlockAndByteOffset bnbOffset;
+	if(getCurrentPointerPosition(thisFile.pointerToCurrentByte, thisFile.fileRecord.dataPointer, &bnbOffset)!=0){
+		#ifdef VERBOSE_DEBUG
+			printf("[truncate2] Erro getCurrentPointerPosition de %s\n",thisFile.fileRecord.name);
+		#endif
+	}
+	int currentPointerBlock = bnbOffset.block;
+	unsigned int nextBlock;
+	if(getPointerToNextBlock(currentPointerBlock, &nextBlock)!=0){
+		#ifdef VERBOSE_DEBUG
+			printf("[truncate2] Erro getPointerToNextBlock do bloco %d\n",currentPointerBlock);
+		#endif
+	}
+	if(nextBlock != UCHAR_MAX){
+		/*Liberamos todos os blocos a partir do bloco em que se encontra o ponteiro, se existirem*/
+		if(setFileBlocksAsUnused(nextBlock) != 0){
+			#ifdef VERBOSE_DEBUG
+				printf("[delete2] Erro ao configurar blocos do arquivo %s como não utilizados\n",thisFile.fileRecord.name);
+			#endif
+			return -1;
+		}
+	}
+
+	/*Configuramos o tamanho do arquivo para ser exatamente o byte apontado pelo pointerToCurrentByte, assim truncando os bytes
+	* que sobram no bloco atual e garantindo que o pointer apontará para o último byte+1 */
+	thisFile.fileRecord.fileSize = thisFile.pointerToCurrentByte;
+	open_files[handle] = thisFile;
+
+	return 0;
 }
 
 /*-----------------------------------------------------------------------------
