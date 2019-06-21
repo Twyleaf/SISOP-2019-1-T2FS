@@ -809,6 +809,7 @@ DIR2 opendir2 (char *pathname) {
 Função:	Função usada para ler as entradas de um diretório.
 -----------------------------------------------------------------------------*/
 int readdir2 (DIR2 handle, DIRENT2 *dentry) {
+	/* ERRADO
 	if(T2FSInitiated==0){
 		initT2FS();
 	}
@@ -822,6 +823,7 @@ int readdir2 (DIR2 handle, DIRENT2 *dentry) {
 	}
 
 	return -1;
+	*/
 }
 
 /*-----------------------------------------------------------------------------
