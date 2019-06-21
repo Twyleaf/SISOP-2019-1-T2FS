@@ -838,6 +838,7 @@ DIR2 opendir2 (char *pathname) {
 		#ifdef VERBOSE_DEBUG
 			printf("[opendir2]Erro ao pegar o numero do primeiro bloco do diretorio %s\n", pathname);
 		#endif
+		return -1;
 	}
 
 	
@@ -848,6 +849,7 @@ DIR2 opendir2 (char *pathname) {
 		#ifdef VERBOSE_DEBUG
 			printf("[opendir2]Erro ao pegar o número do primeiro setor do bloco %d\n", firstBlockDirectory);
 		#endif
+		destroyBuffer(sectorBuffer);
 	}
 
 	read_sector(firstSector, sectorBuffer);
@@ -855,21 +857,25 @@ DIR2 opendir2 (char *pathname) {
 
 	DirData infoDirectory = *(DirData*)sectorBuffer;
 
-	int firstBlockFirstEntryOffset = sizeof(unsigned int)+sizeof(DirData);
-
 	OpenDirData newOpenDir;
 	newOpenDir.isValid = true;
-	newOpenDir.pointerToCurrentEntry = firstBlockFirstEntryOffset;
+	newOpenDir.pointerToCurrentEntry = 0;
 	newOpenDir.fileData = infoDirectory;
+	newOpenDir.firstBlock = firstBlockDirectory;
 
 	int i;
 	for(i = 0; i<10; i++){
 		if(!open_directories[i].isValid){
 			open_directories[i] = newOpenDir;
+			destroyBuffer(sectorBuffer);
 			return i;
 		}
 	}
 
+	#ifdef VERBOSE_DEBUG
+		printf("[opendir2] Ja existem 10 diretorios abertos");
+	#endif
+	destroyBuffer(sectorBuffer);
 	return -1;
 }
 
@@ -877,21 +883,54 @@ DIR2 opendir2 (char *pathname) {
 Função:	Função usada para ler as entradas de um diretório.
 -----------------------------------------------------------------------------*/
 int readdir2 (DIR2 handle, DIRENT2 *dentry) {
-	/* ERRADO?
-	if(T2FSInitiated==0){
-		initT2FS();
-	}
 	
-	if ((handle >= 0) && (handle < 9))
-	{
-		strcpy(dentry->name, open_directories[handle].fileData.name);
-		dentry->fileType = open_directories[handle].fileData.fileType;
-		dentry->fileSize = open_directories[handle].fileData.fileSize;
+	OpenDirData thisDirectory = open_directories[handle];
+	BlockAndByteOffset bnbOffset;
+	if(getCurrentPointerPosition(thisDirectory.pointerToCurrentEntry, thisDirectory.firstBlock, &bnbOffset)!=0){
+		#ifdef VERBOSE_DEBUG
+			printf("[readdir2] Erro getCurrentPointerPosition");
+		#endif
+		return -1;
+	}
+
+	unsigned char* blockBuffer = createBlockBuffer();
+	if(readBlock(bnbOffset.block,blockBuffer)!=0){
+		#ifdef VERBOSE_DEBUG
+			printf("[readdir2] Erro readBlock");
+		#endif
+		destroyBuffer(blockBuffer);
+		return -1;
+	}
+
+	DirRecord thisEntry;
+	thisEntry = *(DirRecord*)(&blockBuffer[bnbOffset.byte]);
+
+	DIRENT2 thisDirent;
+	thisDirent.fileSize = thisEntry.fileSize;
+	thisDirent.fileType = thisEntry.fileType;
+	strcpy(thisDirent.name, thisEntry.name);
+
+	destroyBuffer(blockBuffer);
+	
+	/*Passamos para o buffer */
+	memcpy(dentry, &thisDirent, sizeof(DIRENT2));
+
+	int thisDirectoryEntryCount = thisDirectory.fileData.entryCount;
+	int entrySize = sizeof(DirRecord);
+
+	int newPointerPosition = thisDirectory.pointerToCurrentEntry + entrySize;
+	int thisDirectorySize = thisDirectoryEntryCount*entrySize;
+	
+	if(newPointerPosition >= thisDirectorySize){
+		open_directories[handle].pointerToCurrentEntry = thisDirectorySize;
+		return -1;
+	} else{
+		open_directories[handle].pointerToCurrentEntry = newPointerPosition;
 		return 0;
 	}
 
 	return -1;
-	/*
+
 }
 
 /*-----------------------------------------------------------------------------

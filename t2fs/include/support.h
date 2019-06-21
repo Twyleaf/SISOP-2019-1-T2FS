@@ -41,6 +41,7 @@ typedef struct Open_Dir_Data{
 	bool isValid;
     int pointerToCurrentEntry;
 	DirData fileData;
+    unsigned int firstBlock;
 } OpenDirData;
 
 
