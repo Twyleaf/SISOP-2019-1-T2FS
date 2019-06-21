@@ -10,7 +10,7 @@
 #include "../include/apidisk.h"
 #include "../include/support.h"
 
-#define VERBOSE_DEBUG
+//#define VERBOSE_DEBUG
 //para desativar os prints de debug, basta comentar esta linha
 
 /*-----------------------------------------------------------------------------
@@ -20,7 +20,7 @@ int identify2 (char *name, int size) {
 	if(T2FSInitiated==0){
 		initT2FS();
 	}
-    char components[] = "Amaury Teixeira Cassola 287704\nBruno Ramos Toresan 291332\nDavid Mees Knijnik 264489";
+    char components[] = "Amaury Teixeira Cassola 287704\nBruno Ramos Toresan 291332\nDavid Mees Knijnik 264489\n";
 	if(size >= strlen(components)){
 		strncpy(name, components, strlen(components)+1);
 		return 0;
@@ -98,7 +98,7 @@ FILE2 create2 (char *filename) {
 	}
 
 	if(fileExistsInDir(name,parentDirBlock)==1){
-		printf("[create2] arquivo já existe em diretorio\n");
+		//printf("[create2] arquivo já existe em diretorio\n");
 		if(delete2(filename)<0){
 			return -1;
 		}
@@ -314,7 +314,7 @@ int read2 (FILE2 handle, char *buffer, int size) {
 
 	OpenFileData thisFile = open_files[handle];
 	BlockAndByteOffset BnBOffset;
-	printf("retorno getpointer %d\n", getCurrentPointerPosition(thisFile.pointerToCurrentByte, thisFile.fileRecord.dataPointer, &BnBOffset));
+	//printf("retorno getpointer %d\n", getCurrentPointerPosition(thisFile.pointerToCurrentByte, thisFile.fileRecord.dataPointer, &BnBOffset));
 
 	int firstBlockToRead = BnBOffset.block;
 	int firstBlockOffset = BnBOffset.byte;
@@ -558,38 +558,38 @@ int mkdir2 (char *pathname) {
 	char name[32];
 	
 	if(isPathnameAlphanumeric(pathname,MAX_FILE_NAME_SIZE+1)==-1){
-		printf("[mkdir2]Erro: nome de arquivo inválido\n");
+		//printf("[mkdir2]Erro: nome de arquivo inválido\n");
 		return -1;
 	}
-	printf("[mkdir2]Começando a ler o path do arquivo\n");
+	//printf("[mkdir2]Começando a ler o path do arquivo\n");
 	if(getFileNameAndPath(pathname,path, name)==-1){
-		printf("[mkdir2]Erro ao ler o path do arquivo\n");
+		//printf("[mkdir2]Erro ao ler o path do arquivo\n");
 		return -1;
 	}
-	//TO DO: CRIAR TESTE SE HÁ ARQUIVO DE MESMO NOME NO DIRETÓRIO
-	printf("[mkdir2]lendo o bloco do diretório pai\n");
+
+	//printf("[mkdir2]lendo o bloco do diretório pai\n");
 	int parentDirBlock = getFileBlock(path);
 	if(parentDirBlock == -1){
-		printf("[mkdir2] Erro ao ler o bloco do diretório pai\nNome do diretório:%s\n",path);
+		//printf("[mkdir2] Erro ao ler o bloco do diretório pai\nNome do diretório:%s\n",path);
 		return -1;
 	}
 	
 	if(getFileType(parentDirBlock)!=0x02){//Se o diretório pai não é um arquivo de diretório
-		printf("[mkdir2] Erro: arquivo em path não diretório\n");
+		//printf("[mkdir2] Erro: arquivo em path não diretório\n");
 		return -1;
 	}
 	
 
 	if(fileExistsInDir(name,parentDirBlock)==1){
-		printf("[mkdir2] Arquivo de nome %s já existe no diretório\n",name);
+		//printf("[mkdir2] Arquivo de nome %s já existe no diretório\n",name);
 		return -1;
 	}
 
 	int firstBlockNumber = allocateBlock();
-	printf("[mkdir2] Bloco %d Alocado para o arquivo\n",firstBlockNumber);
+	//printf("[mkdir2] Bloco %d Alocado para o arquivo\n",firstBlockNumber);
 
 	if(firstBlockNumber==-1){
-		printf("[mkdir2] Erro ao alocar um bloco\n");
+		//printf("[mkdir2] Erro ao alocar um bloco\n");
 		return -1;
 	}
 	
@@ -604,10 +604,10 @@ int mkdir2 (char *pathname) {
 	newDirEntry.dataPointer = firstBlockNumber;
 	newDirEntry.isValid = true;
 	newDirEntry.fileSize = 0;
-	printf("[mkdir2]Nome do arquivo no diretório: %s, tipo: %d, ponteiro: %d\n",newDirEntry.name,newDirEntry.fileType,newDirEntry.dataPointer);
+	//printf("[mkdir2]Nome do arquivo no diretório: %s, tipo: %d, ponteiro: %d\n",newDirEntry.name,newDirEntry.fileType,newDirEntry.dataPointer);
 	
 	if(insertEntryInDir(parentDirBlock,newDirEntry)==-1){
-		printf("[mkdir2]Erro ao inserir entrada em diretório\n");
+		//printf("[mkdir2]Erro ao inserir entrada em diretório\n");
 		return -1;
 	}
 	

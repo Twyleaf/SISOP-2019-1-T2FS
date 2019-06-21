@@ -8,10 +8,8 @@
 #include "../include/apidisk.h"
 #include "../include/bitmap.h"
 
-//=========================================NOVO=====================================
-#define VERBOSE_DEBUG
+//#define VERBOSE_DEBUG
 //para desativar os prints de debug, basta comentar esta linha
-//=====================================================================================
 
 int T2FSInitiated = 0;
 short diskVersion;
@@ -237,7 +235,7 @@ int goToFileFromParentDir(char* dirName,int parentDirBlockNumber){
 		while((dirEntryIndex<filesInDir)&&(dirOffset<=blockSize-dirEntrySize)){//Enquanto não ler todas as entradas e não exceder tamanho do bloco
 			record = *(DirRecord*)(blockBuffer+dirOffset);//Lê entrada
 			if(record.isValid){//se entrada é válida
-				printf("[goToFileFromParentDir]Comparação de nome %s VS %s Na entrada com offset %d\n",dirName,record.name,dirOffset);
+				//printf("[goToFileFromParentDir]Comparação de nome %s VS %s Na entrada com offset %d\n",dirName,record.name,dirOffset);
 				if(strcmp(dirName,record.name)==0){//Se nome é o sendo procurado, retorna número do bloco do arquivo.
 					return record.dataPointer;
 				}
@@ -291,7 +289,7 @@ int readBlock(int blockNumber, unsigned char* data){
 }
 
 int writeBlock(int blockNumber, unsigned char* data){
-	printf("[writeBlock] Escrevendo no bloco %d\n",blockNumber);
+	//printf("[writeBlock] Escrevendo no bloco %d\n",blockNumber);
 	int sectorsPerBlock = getSectorsPerBlock(blockSize);
 	int sectorPos = blockSectionStart+(blockNumber * sectorsPerBlock);
 	int i, j;
@@ -306,7 +304,7 @@ int writeBlock(int blockNumber, unsigned char* data){
 		printf("[writeBlock]Nome do arquivo no diretório: %s, tipo: %d, ponteiro: %d\n",
 			dirRecord.name,dirRecord.fileType,dirRecord.dataPointer);
 			*/
-		printf("[writeBlock]Setor %d sendo escrito\n",sectorPos + i);
+		//printf("[writeBlock]Setor %d sendo escrito\n",sectorPos + i);
 		if(write_sector(sectorPos + i, sectorBuffer) != 0){
 			return -1;
 		}
@@ -342,7 +340,7 @@ int getFileNameAndPath(char *pathname, char *path, char *name){
 		lastNameIndex++;
 	}
 	name[nameIndex]='\0';
-	printf("[getFileNameAndPath] Arquivo de pathname %s, path %s e nome %s\n",pathname, path,name);
+	//printf("[getFileNameAndPath] Arquivo de pathname %s, path %s e nome %s\n",pathname, path,name);
 	return 0;
 }
 
@@ -350,7 +348,7 @@ int allocateBlock(){
 	int sectorsPerBlock = getSectorsPerBlock(blockSize);
 	int bytesForBitmap = getBytesForBitmap(sectorsPerBlock);//Excessão
 	int sectorsForBitmap = ceil(bytesForBitmap/(float)SECTOR_SIZE);
-	printf("[allocateBlock] Setores para bitmap: %d\n",sectorsForBitmap);
+	//printf("[allocateBlock] Setores para bitmap: %d\n",sectorsForBitmap);
 	unsigned char* bitmapBuffer = (unsigned char*)malloc(sizeof(unsigned char)*SECTOR_SIZE*sectorsForBitmap);
 	int currentSector;
 	//printf("Setores usados para o bitmap %d\n",sectorsForBitmap);
@@ -391,7 +389,7 @@ int writeDirData(int firstBlockNumber, DirData newDirData){
 		return -1;
 	int dirDataOffset = sizeof(int);//Ponteiro para próximo bloco no começo
 	memcpy(sectorBuffer+dirDataOffset, &newDirData, sizeof(DirData));//Escreve dados de T2FS no disco
-	printf("[writeDirData]Setor %d sendo escrito\n",sectorToUse);
+	//printf("[writeDirData]Setor %d sendo escrito\n",sectorToUse);
 	if(write_sector(sectorToUse,sectorBuffer)!=0)
 		return -1;
 	return 0;
@@ -815,18 +813,17 @@ void writeNextBlockPointer(int blockNumber,unsigned int pointer){
 	unsigned char sectorBuffer[SECTOR_SIZE];
 	read_sector(sector,sectorBuffer);
 	memcpy(sectorBuffer, (unsigned int*)&pointer, sizeof(unsigned int));//Escreve ponteiro
-	printf("[writeNextBlockPointer]Setor %d sendo escrito\n",sector);
+	//printf("[writeNextBlockPointer]Setor %d sendo escrito\n",sector);
 	write_sector(sector,sectorBuffer);
 	
 }
 
 int writeRecordInBlock(DirRecord newDirEntry, int blockToWriteEntry, int dirToInsertOffset){
 	unsigned char* blockBuffer = createBlockBuffer();
-	printf("[writeRecordInBlock]Nome do arquivo no diretório: %s, tipo: %d, ponteiro: %d\n",newDirEntry.name,newDirEntry.fileType,newDirEntry.dataPointer);
+	//printf("[writeRecordInBlock]Nome do arquivo no diretório: %s, tipo: %d, ponteiro: %d\n",newDirEntry.name,newDirEntry.fileType,newDirEntry.dataPointer);
 	if(readBlock(blockToWriteEntry, blockBuffer)!=0)
 		return -1;
-	printf("[writeRecordInBlock]Record do diretório de nome %s sendo escrito no bloco %d com offset %d\n",
-		newDirEntry.name,blockToWriteEntry,dirToInsertOffset);
+	//printf("[writeRecordInBlock]Record do diretório de nome %s sendo escrito no bloco %d com offset %d\n",newDirEntry.name,blockToWriteEntry,dirToInsertOffset);
 	memcpy(&blockBuffer[dirToInsertOffset], (const unsigned char*)&newDirEntry, sizeof(newDirEntry));
 	if(writeBlock(blockToWriteEntry, blockBuffer)!=0)
 		return -1;
@@ -1200,7 +1197,7 @@ int getFileType(int firstBlockNumber){
 	if(read_sector(sectorToUse,sectorBuffer)!=0)
 		return -1;
 	DirData dirDataToRead = *(DirData*)(sectorBuffer+blockPointerSize);
-	printf("[getFileType] Tipo do arquivo de bloco %d: %d\n",firstBlockNumber,dirDataToRead.fileType);
+	//printf("[getFileType] Tipo do arquivo de bloco %d: %d\n",firstBlockNumber,dirDataToRead.fileType);
 	return dirDataToRead.fileType;
 }
 
