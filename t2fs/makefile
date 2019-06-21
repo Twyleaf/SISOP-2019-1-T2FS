@@ -17,12 +17,6 @@ OBJS= $(LIB_DIR)/apidisk.o $(BIN_DIR)/bitmap.o $(BIN_DIR)/support.o  $(BIN_DIR)/
 
 all:regra1 regra2 regra3 regraLib
 
-
-testeObj:
-	$(CC) -c teste/testeDir.c src/t2fs.c src/support.c src/bitmap.c -Wall -w
-testeExe:
-	$(CC) testeDir.o t2fs.o support.o bitmap.o lib/apidisk.o -o testes -lm
-
 regra1: #dependências para a regra1
 	$(CC) -c  $(SRC_DIR)/support.c -o $(BIN_DIR)/support.o 
 
@@ -33,7 +27,7 @@ regra3: #dependências para a regra3
 	$(CC) -c $(SRC_DIR)/t2fs.c -o $(BIN_DIR)/t2fs.o 
 
 regraLib: #dependências para a regraLib
-	ar crs $(LIB_DIR)/libcthread.a $(OBJS)
+	ar crs $(LIB_DIR)/libt2fs.a $(OBJS)
 
 clean:
 	rm -rf $(LIB_DIR)/*.a $(BIN_DIR)/*.o $(SRC_DIR)/*~ $(INC_DIR)/*~ *~
