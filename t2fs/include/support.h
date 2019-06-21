@@ -39,6 +39,7 @@ typedef struct Open_File_Data{
 
 typedef struct Open_Dir_Data{
 	bool isValid;
+    int pointerToCurrentEntry;
 	DirData fileData;
 } OpenDirData;
 
@@ -49,7 +50,7 @@ typedef struct Block_And_Byte_Offset{
 } BlockAndByteOffset;
 
 OpenFileData open_files[10]; //apenas 10 arquivos podem estar abertos simultaneamente
-OpenDirData open_directories[255]; // não tem um limite de diretórios que possam estara abertos
+OpenDirData open_directories[10]; // apenas 10 diretórios abertos simultaneamente
 
 extern int T2FSInitiated;
 extern short diskVersion;

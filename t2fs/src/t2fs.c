@@ -832,6 +832,44 @@ DIR2 opendir2 (char *pathname) {
 	if(T2FSInitiated==0){
 		initT2FS();
 	}
+
+	int firstBlockDirectory = getFileBlock(pathname);
+	if(firstBlockDirectory == -1){
+		#ifdef VERBOSE_DEBUG
+			printf("[opendir2]Erro ao pegar o numero do primeiro bloco do diretorio %s\n", pathname);
+		#endif
+	}
+
+	
+	unsigned char* sectorBuffer = createSectorBuffer();
+
+	int firstSector = getFirstSectorOfBlock(firstBlockDirectory);
+	if(firstSector == -1){
+		#ifdef VERBOSE_DEBUG
+			printf("[opendir2]Erro ao pegar o número do primeiro setor do bloco %d\n", firstBlockDirectory);
+		#endif
+	}
+
+	read_sector(firstSector, sectorBuffer);
+
+
+	DirData infoDirectory = *(DirData*)sectorBuffer;
+
+	int firstBlockFirstEntryOffset = sizeof(unsigned int)+sizeof(DirData);
+
+	OpenDirData newOpenDir;
+	newOpenDir.isValid = true;
+	newOpenDir.pointerToCurrentEntry = firstBlockFirstEntryOffset;
+	newOpenDir.fileData = infoDirectory;
+
+	int i;
+	for(i = 0; i<10; i++){
+		if(!open_directories[i].isValid){
+			open_directories[i] = newOpenDir;
+			return i;
+		}
+	}
+
 	return -1;
 }
 

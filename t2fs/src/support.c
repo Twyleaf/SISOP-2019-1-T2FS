@@ -89,7 +89,12 @@ int initT2FS(){
 	int currentIndex = 0;
 	OpenFileData emptyFile;
 	emptyFile.isValid = false;
-	for(currentIndex = 0; currentIndex < 10; currentIndex++) open_files[currentIndex] = emptyFile;
+	OpenDirData emptyDir;
+	emptyDir.isValid = false;
+	for(currentIndex = 0; currentIndex < 10; currentIndex++){
+		 open_files[currentIndex] = emptyFile;
+		 open_directories[currentIndex] = emptyDir;
+	}
 	
 	return 1;
 }
