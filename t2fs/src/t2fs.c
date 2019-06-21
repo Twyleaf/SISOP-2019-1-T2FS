@@ -839,21 +839,21 @@ DIR2 opendir2 (char *pathname) {
 Função:	Função usada para ler as entradas de um diretório.
 -----------------------------------------------------------------------------*/
 int readdir2 (DIR2 handle, DIRENT2 *dentry) {
-	/* ERRADO
+	/* ERRADO?
 	if(T2FSInitiated==0){
 		initT2FS();
 	}
 	
 	if ((handle >= 0) && (handle < 9))
 	{
-		strcpy(dentry->name, open_files[handle].fileRecord.name);
-		dentry->fileType = open_files[handle].fileRecord.fileType;
-		dentry->fileSize = open_files[handle].fileRecord.fileSize;
+		strcpy(dentry->name, open_directories[handle].fileData.name);
+		dentry->fileType = open_directories[handle].fileData.fileType;
+		dentry->fileSize = open_directories[handle].fileData.fileSize;
 		return 0;
 	}
 
 	return -1;
-	*/
+	/*
 }
 
 /*-----------------------------------------------------------------------------
